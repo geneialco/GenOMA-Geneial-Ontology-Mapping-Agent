@@ -110,9 +110,9 @@ read data → batch process → export results.
 main.py               # CLI entry
 requirements.txt
 .env.example          # fill & rename to .env
-eva_ML4H.ipynb        # evaluation / analysis
-test_ML4H.ipynb       # tests code 
-test_ML4H_nodes_test.ipynb
+eva.ipynb        # evaluation / analysis
+test.ipynb       # tests code 
+test_nodes_test.ipynb
 gc.xlsx               # sample input (questions)
 mapped_gc.xlsx        # sample output (mappings)
 ```
