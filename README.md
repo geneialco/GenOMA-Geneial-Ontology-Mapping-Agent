@@ -15,7 +15,7 @@ umls server API (necessary)
 
 ## Installation
 <details>
-<summary><b>Linux / macOS (bash)</b></summary>
+Linux / macOS (bash)
 ```bash
 # create venv
 python -m venv .venv
