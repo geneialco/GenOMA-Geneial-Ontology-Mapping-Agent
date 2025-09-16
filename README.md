@@ -14,7 +14,6 @@ API keys: OPENAI_API_KEY (necessary)
 umls server API (necessary)
 
 ## Installation
-<details>
 Linux / macOS (bash)
 ```bash
 # create venv
@@ -27,7 +26,6 @@ cp .env.example .env
 ```
 
 ## .env.example
-<details>
 <summary><b>Linux / macOS (dotenv)</b></summary>
 ```dotenv
 OPENAI_API_KEY=your_key_here
