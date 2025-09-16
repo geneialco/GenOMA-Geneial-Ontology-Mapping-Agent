@@ -32,8 +32,8 @@ OPENAI_API_KEY=your_key_here
 ```
 
 ## How to Use
-> Prereqs: complete **Installation**, and set `OPENAI_API_KEY` in `.env`.
-> Makeing sure the umls server API is ready (API_BASE_URL = "http://localhost:8000/")
+- Prereqs: complete **Installation**, and set your own `OPENAI_API_KEY` in `.env`.
+- Makeing sure the umls server API is ready (API_BASE_URL = "http://localhost:8000/")
 
 ### 1 Single text (quick test in `test_ML4H.ipynb`)
 Open `test_ML4H.ipynb`, find the first cell:
