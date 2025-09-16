@@ -103,7 +103,8 @@ read data → batch process → export results.
   tools/
     __init__.py
     flatten_names.py
-    umls_tools.py     # UMLS/HPO API helpers (env-based) ```
+    umls_tools.py     # UMLS/HPO API helpers (env-based)
+```
 # repo root
 ```
 main.py               # CLI entry
@@ -113,7 +114,8 @@ eva_ML4H.ipynb        # evaluation / analysis
 test_ML4H.ipynb       # tests code 
 test_ML4H_nodes_test.ipynb
 gc.xlsx               # sample input (questions)
-mapped_gc.xlsx        # sample output (mappings) ```
+mapped_gc.xlsx        # sample output (mappings)
+```
 
 
 ## ⚗️ Agent Nodes
