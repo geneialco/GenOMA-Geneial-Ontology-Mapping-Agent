@@ -1,4 +1,4 @@
-# Geneial Ontology Mapping Agent
+# GenOMA(Geneial Ontology Mapping Agent)
 A modular agent system for mapping clinical or survey questions to standardized biomedical ontologies (e.g., HPO) using LangGraph. The agent integrates LLM-based term extraction, ontology candidate retrieval, ranking, and validation to produce robust, context-aware mappings suitable for symptom normalization workflows.
 
 ## 🔍 Key Features
