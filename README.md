@@ -73,7 +73,7 @@ read data → batch process → export results.
     DEFAULT_FIELD_TYPE = "radio"  # change to 'checkbox' or 'short' if appropriate
 
 ## 📁 Project Structure
-src/
+```src/
   agents/
     __init__.py
     agents.py        # agent registry & high-level runner
@@ -103,8 +103,9 @@ src/
   tools/
     __init__.py
     flatten_names.py
-    umls_tools.py     # UMLS/HPO API helpers (env-based)
+    umls_tools.py     # UMLS/HPO API helpers (env-based) ```
 # repo root
+```
 main.py               # CLI entry
 requirements.txt
 .env.example          # fill & rename to .env
@@ -112,7 +113,7 @@ eva_ML4H.ipynb        # evaluation / analysis
 test_ML4H.ipynb       # tests code 
 test_ML4H_nodes_test.ipynb
 gc.xlsx               # sample input (questions)
-mapped_gc.xlsx        # sample output (mappings)
+mapped_gc.xlsx        # sample output (mappings) ```
 
 
 ## ⚗️ Agent Nodes
