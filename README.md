@@ -36,8 +36,8 @@ OPENAI_API_KEY=your_key_here
 - Makeing sure the umls server API is ready (API_BASE_URL = "http://localhost:8000/")
 
 ### 1 Single text (quick test in `test_ML4H.ipynb`)
-Open `test_ML4H.ipynb`, find the first cell:
-
+- Using your VScode or Cursor open our projet folder
+- Open `test_ML4H.ipynb`, find the first cell:
 ```python
 # Use a data to test before officially starting the running
 from src.graph.builder import umls_mapping_graph
@@ -47,24 +47,25 @@ result = umls_mapping_graph.invoke({
 })
 print(result)
 ```
-Replace the value of "text" with the question/phrase you want to map.
-Set "field_type" based on your input:
+- Replace the value of "text" with the question/phrase you want to map.
+- Set "field_type" based on your input:
     radio — (default) for yes/no questions or regular sentences.
     checkbox — for multi-select questions with options.
     short — for short phrases (typically < 5 meaningful words).
-The cell prints a dict with keys like:
+- The cell prints a dict with keys like:
 extracted_terms, candidates, best_match_code, best_match_term, confidence.
 
 ### 2 Batch mapping from Excel (in test_ML4H.ipynb)
-Run the cells after the single-text demo in test_ML4H.ipynb following this order:
+- Using your VScode or Cursor open our projet folder
+- Run the cells after the single-text demo in test_ML4H.ipynb following this order:
 read data → batch process → export results.
-Input: an Excel file (default gc.xlsx) with a column named Question.
-The notebook processes each row and creates three new columns:
+- Input: Your Excel file (default gc.xlsx as sample) with a column named "Question", the text in "Question" is the input text data.
+- Output: The notebook processes each row and creates three new columes:
     agent_term — the term extracted by the agent
     agent_code — the mapped HPO code
     confidence — confidence score (0–1)
 
-Typical variables in the notebook (adjust if needed):
+- Typical variables in the notebook (adjust if needed):
     INPUT_PATH = "gc.xlsx"
     OUTPUT_PATH = "mapped_gc.xlsx"
     QUESTION_COL = "Question"
