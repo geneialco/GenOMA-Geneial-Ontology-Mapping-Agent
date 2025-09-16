@@ -27,6 +27,7 @@ cp .env.example .env
 
 ## .env.example
 Linux / macOS (dotenv)
+Create a .env file under the project root directory and add your OpenAI API key:
 ```dotenv
 OPENAI_API_KEY=your_key_here
 ```
@@ -37,7 +38,7 @@ OPENAI_API_KEY=your_key_here
 
 ### 1 Single text (quick test in `test.ipynb`)
 - Using your VScode or Cursor open our projet folder
-- Open `test_ML4H.ipynb`, find the first cell:
+- Open `test.ipynb`, find the first cell:
 ```python
 # Use a data to test before officially starting the running
 from src.graph.builder import umls_mapping_graph
@@ -57,7 +58,7 @@ extracted_terms, candidates, best_match_code, best_match_term, confidence.
 
 ### 2 Batch mapping from Excel (in  `test.ipynb`)
 - Using your VScode or Cursor open our projet folder
-- Run the cells after the single-text demo in test_ML4H.ipynb following this order:
+- Run the cells after the single-text demo in test.ipynb following this order:
 read data → batch process → export results.
 - Input: Your Excel file (default gc.xlsx as sample) with a column named "Question", the text in "Question" is the input text data.
 - Output: The notebook processes each row and creates three new columes:
