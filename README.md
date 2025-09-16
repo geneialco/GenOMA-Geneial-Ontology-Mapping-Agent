@@ -9,9 +9,9 @@ A modular agent system for mapping clinical or survey questions to standardized 
 - ⚙️ **Modular Nodes**: Each step is implemented as a reusable node in a LangGraph state graph
 
 ## Requirements
-Python 3.11 (recommended)
-API keys: OPENAI_API_KEY (necessary)
-umls server API (necessary)
+# 1. Python 3.11 (recommended)
+# 2. API keys: OPENAI_API_KEY (necessary)
+# 3. umls server API (necessary):You can fellow this link: https://github.com/geneialco/umls-server
 
 ## Installation
 Linux / macOS (bash)
