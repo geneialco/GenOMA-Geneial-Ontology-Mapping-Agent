@@ -26,7 +26,7 @@ cp .env.example .env
 ```
 
 ## .env.example
-<summary><b>Linux / macOS (dotenv)</b></summary>
+Linux / macOS (dotenv)
 ```dotenv
 OPENAI_API_KEY=your_key_here
 ```
