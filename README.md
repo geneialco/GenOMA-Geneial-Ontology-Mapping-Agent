@@ -35,7 +35,7 @@ OPENAI_API_KEY=your_key_here
 - Prereqs: complete **Installation**, and set your own `OPENAI_API_KEY` in `.env`.
 - Makeing sure the umls server API is ready (API_BASE_URL = "http://localhost:8000/")
 
-### 1 Single text (quick test in `test_ML4H.ipynb`)
+### 1 Single text (quick test in `test.ipynb`)
 - Using your VScode or Cursor open our projet folder
 - Open `test_ML4H.ipynb`, find the first cell:
 ```python
@@ -55,7 +55,7 @@ print(result)
 - The cell prints a dict with keys like:
 extracted_terms, candidates, best_match_code, best_match_term, confidence.
 
-### 2 Batch mapping from Excel (in test_ML4H.ipynb)
+### 2 Batch mapping from Excel (in  `test.ipynb`)
 - Using your VScode or Cursor open our projet folder
 - Run the cells after the single-text demo in test_ML4H.ipynb following this order:
 read data → batch process → export results.
