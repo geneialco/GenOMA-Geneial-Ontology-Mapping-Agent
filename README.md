@@ -1,4 +1,4 @@
-## UMLS Mapping LangGraph-Based Agent
+# UMLS Mapping LangGraph-Based Agent
 A modular agent system for mapping clinical or survey questions to standardized biomedical ontologies (e.g., HPO) using LangGraph. The agent integrates LLM-based term extraction, ontology candidate retrieval, ranking, and validation to produce robust, context-aware mappings suitable for symptom normalization workflows.
 
 ## 🔍 Key Features
@@ -13,7 +13,7 @@ A modular agent system for mapping clinical or survey questions to standardized 
 ### 2. API keys: OPENAI_API_KEY (necessary)
 ### 3. umls server API (necessary):You can fellow this link: https://github.com/geneialco/umls-server
 
-## Installation
+## Installation step
 Linux / macOS (bash)
 ```bash
 # create venv
