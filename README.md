@@ -27,7 +27,7 @@ cp .env.example .env
 
 ## .env.example
 Linux / macOS (dotenv)
-Create a .env file under the project root directory and add your OpenAI API key:
+- Create a .env file under the project root directory and add your OpenAI API key:
 ```dotenv
 OPENAI_API_KEY=your_key_here
 ```
