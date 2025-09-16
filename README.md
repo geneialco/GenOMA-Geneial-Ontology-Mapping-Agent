@@ -1,4 +1,4 @@
-# UMLS Mapping LangGrapt based Agent 
+# Geneial Ontology Mapping Agent (GenOMA) 
 
 A modular agent system for mapping clinical or survey questions to standardized biomedical ontologies, including Human Phenotype Ontology (HPO). Built with [LangGraph](https://github.com/langchain-ai/langgraph), the agent integrates LLM-based term extraction, candidate ranking, and mapping validation for robust symptom normalization workflows.
 
