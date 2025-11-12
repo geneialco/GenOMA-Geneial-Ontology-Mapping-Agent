@@ -14,7 +14,7 @@ from src.graph.types import MappingState
 from src.tools.umls_tools import get_cui_from_ontology, get_ancestors, get_cui_info, get_hpo_from_cui
 
 # UMLS API Base URL for ontology queries
-API_BASE_URL = "http://localhost:8000/"
+API_BASE_URL = "https://ontology.jax.org/api/hp/search"
 
 def is_question_mappable_node(state: MappingState) -> MappingState:
     """
@@ -231,52 +231,52 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
     Returns:
         MappingState: Updated state with UMLS mapping candidates
     """
-    terms = state.get("extracted_terms", [])
-    ontology = state.get("ontology", "HPO")  # Default to Human Phenotype Ontology
+    raw = state.get("extracted_terms", "")
+    if isinstance(raw, list):
+        term = raw[0] if raw else ""
+    else:
+        term = str(raw or "").strip()
 
     all_results = []
+    if not term:
+        print("⚠️ No term provided.")
+        return {**state, "umls_mappings": [{"original": "", "candidates": []}]}
 
-    # Query UMLS API for each extracted term
-    for term in terms:
-        url = f"{API_BASE_URL}/terms?search={term}&ontology={ontology}"
+    params = {"q": term, "page": 0, "limit": 5}
 
-        try:
-            response = requests.get(url, timeout=10)
-            print(f"🌐 [{term}] API Status: {response.status_code}")
+    try:
+        resp = requests.get(API_BASE_URL, params=params, timeout=10)
+        print(f"🌐 [{term}] API Status: {resp.status_code}")
 
-            if response.status_code != 200:
-                print(f"❌ Failed for term: {term}")
-                all_results.append({
-                    "original": term,
-                    "candidates": []
-                })
-                continue
-
+        if resp.status_code != 200:
+            print(f"❌ Failed for term: {term}")
+            all_results.append({"original": term, "candidates": []})
+        else:
             try:
-                data = response.json()
-                results = data.get("results", [])
-                print(f"✅ Results for {term}: {results}")
+                data = resp.json()
+                results = data.get("terms", [])  # HPO 的返回字段
             except Exception as e:
                 print(f"❗ JSON parse error for term '{term}': {e}")
                 results = []
 
-            all_results.append({
-                "original": term,
-                "candidates": results
-            })
+            # 适配为下游通用的候选结构
+            candidates = [{
+                "code": r.get("id"),                 # ← HPO 的 id 映射到原来的 code
+                "term": r.get("name"),               # ← HPO 的 name 映射到原来的 term
+                "description": r.get("definition"),  # ← HPO 的 definition 映射到原来的 description
+                "synonyms": r.get("synonyms", []),
+                "xrefs": r.get("xrefs", []),
+            } for r in results]
 
-        except Exception as e:
-            print(f"❗ Request failed for term '{term}': {e}")
-            all_results.append({
-                "original": term,
-                "candidates": []
-            })
+            print(f"✅ {term} candidates: {candidates[:2]} ...")
+            all_results.append({"original": term, "candidates": candidates})
 
-    print("🧪 Final UMLS mappings:", all_results)
-    return {
-        **state,
-        "umls_mappings": all_results  
-    }
+    except Exception as e:
+        print(f"❗ Request failed for term '{term}': {e}")
+        all_results.append({"original": term, "candidates": []})
+
+    print("🧪 Final HPO mappings:", all_results)
+    return {**state, "umls_mappings": all_results}  # 保持键名以兼容后续节点
 # state: text, is_mappable, mappability_retry_count, extracted_terms, umls_mappings
 
 
