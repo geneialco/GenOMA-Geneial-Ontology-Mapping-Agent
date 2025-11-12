@@ -11,7 +11,6 @@ A modular agent system for mapping clinical or survey questions to standardized 
 ## Requirements
 - **1. Python 3.11 (recommended)**
 - **2. API keys: OPENAI_API_KEY (necessary)**
-- **3. umls server API (necessary)**:You can fellow this link: https://github.com/geneialco/umls-server
 
 ## Installation step
 Linux / macOS (bash)
@@ -34,7 +33,6 @@ OPENAI_API_KEY=your_key_here
 
 ## How to Use
 - Prereqs: complete **Installation**, and set your own `OPENAI_API_KEY` in `.env`.
-- Makeing sure the umls server API is ready (API_BASE_URL = "http://localhost:8000/")
 
 ### 1 Single text (quick test in `test.ipynb`)
 - Using your VScode or Cursor open our projet folder
