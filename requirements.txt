@@ -10,7 +10,7 @@ requests>=2.31
 python-dotenv>=1.0
 pydantic>=2.0
 
-# ==== (可选) 若你仓库里也包含后端/服务 ====
+# ==== options ====
 fastapi>=0.110
 uvicorn[standard]>=0.30
 
