@@ -3,7 +3,7 @@ A modular agent system for mapping clinical or survey questions to standardized 
 
 ## 🔍 Key Features
 - ✅ **LLM-Based Extraction**: Identifies clinically relevant terms from free-text input
-- 🌐 **Ontology Querying**: Calls UMLS-compatible APIs to retrieve candidate terms from ontologies (e.g., HPO)
+- 🌐 **Ontology Querying**: Calls ontology.jax.org APIs to retrieve candidate terms from ontologies (e.g., HPO)
 - 📊 **Candidate Ranking**: Uses LLM to assign confidence scores to mapped terms
 - 🧠 **Mapping Validation**: Chooses the most appropriate term using question context
 - ⚙️ **Modular Nodes**: Each step is implemented as a reusable node in a LangGraph state graph
@@ -94,14 +94,12 @@ read data → batch process → export results.
     is_mappable.md
     rank_evaluate_with_llm.md
     rank_mappings.md
-    refine_mapping.md
     retry_with_llm_rewrite.md
     template.py
     validate_mapping.md
   tools/
     __init__.py
     flatten_names.py
-    umls_tools.py     # UMLS/HPO API helpers (env-based)
 ```
 # repo root
 ```
@@ -127,6 +125,5 @@ mapped_gc.xlsx        # sample output (mappings)
 - `rank_mappings` — Ranks candidates with context and assigns confidence scores.
 - `validate_mapping` — Final sanity check and selection (`best_match_*`).
 - `retry_with_llm_rewrite` — Rewrites and retries when confidence is low.
-- `gather_ancestor_candidates` — Fetches ancestor/parent concepts for the matched term.
 
 
