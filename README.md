@@ -121,7 +121,7 @@ mapped_gc.xlsx        # sample output (mappings)
 - `extract_medical_terms_radio` — Extracts terms from single-choice questions.
 - `extract_medical_terms_checkbox` — Extracts multiple terms from multi-select questions.
 - `extract_medical_terms_short` — Extracts terms from short/free-text prompts.
-- `fetch_umls_terms` — Calls a UMLS/HPO API to retrieve candidate ontology terms.
+- `fetch_umls_terms` — Calls a HPO API to retrieve candidate ontology terms.
 - `rank_mappings` — Ranks candidates with context and assigns confidence scores.
 - `validate_mapping` — Final sanity check and selection (`best_match_*`).
 - `retry_with_llm_rewrite` — Rewrites and retries when confidence is low.
