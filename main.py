@@ -4,21 +4,108 @@ Main FastAPI application entry point for the UMLS Mapping LangGraph-based Agent.
 This module provides a simple REST API interface for testing the medical term mapping functionality.
 """
 
-from fastapi import FastAPI
+from typing import Any, Dict, List, Optional
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+
+from src.graph.builder import build_umls_mapper_graph
 
 # Initialize FastAPI application
 app = FastAPI()
 
-@app.get("/terms")
-def get_terms(search: str, ontology: str = "HPO"):
+# Allow local frontend during development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class MapRequest(BaseModel):
+    text: str = Field(..., description="The survey question or free-text to map")
+    field_type: str = Field(..., description='One of: "radio", "checkbox", "short"')
+    ontology: Optional[str] = Field("HPO", description="Target ontology (default HPO)")
+
+
+class MappingCandidate(BaseModel):
+    code: str
+    term: str
+    description: Optional[str]
+    confidence: Optional[float]
+
+
+class MapResponse(BaseModel):
+    input: Dict[str, Any]
+    validated_mappings: List[MappingCandidate] = []
+    raw_state: Dict[str, Any] = {}
+
+
+@app.post("/map", response_model=MapResponse)
+def map_text(req: MapRequest):
+    """Invoke the UMLS/HPO mapping LangGraph workflow.
+
+    The graph expects a MappingState-like dict. We provide the minimal required
+    inputs: `text` and `field_type`. The compiled graph is invoked and the
+    final state is returned (we surface `validated_mappings` when present).
     """
-    Endpoint to search for medical terms in ontologies.
-    
-    Args:
-        search (str): The medical term to search for
-        ontology (str): The target ontology (default: "HPO" for Human Phenotype Ontology)
-    
-    Returns:
-        dict: A dictionary containing search results with dummy data for testing
-    """
-    return {"results": [{"code": "HP:0000001", "term": search, "description": "Dummy description"}]}
+    try:
+        graph = build_umls_mapper_graph()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to build mapping graph: {e}"
+        )
+
+    initial_state = {
+        "text": req.text,
+        "field_type": req.field_type,
+        "ontology": req.ontology,
+    }
+
+    try:
+        # compiled LangGraph object should expose `invoke` or `run` — try `invoke` first
+        if hasattr(graph, "invoke"):
+            result_state = graph.invoke(initial_state)
+        elif hasattr(graph, "run"):
+            result_state = graph.run(initial_state)
+        else:
+            # fall back to calling as a function if applicable
+            result_state = graph(initial_state)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Graph invocation failed: {e}")
+
+    # Ensure we return JSON-serializable structures
+    validated = (
+        result_state.get("validated_mappings")
+        if isinstance(result_state, dict)
+        else None
+    )
+    if not validated:
+        # Try other likely keys
+        validated = (
+            result_state.get("ranked_mappings")
+            if isinstance(result_state, dict)
+            else []
+        )
+
+    # Normalize candidate items
+    normalized: List[MappingCandidate] = []
+    if isinstance(validated, list):
+        for item in validated:
+            if not isinstance(item, dict):
+                continue
+            normalized.append(
+                MappingCandidate(
+                    code=item.get("code") or item.get("id") or "",
+                    term=item.get("term") or item.get("label") or "",
+                    description=item.get("description") or item.get("def") or None,
+                    confidence=item.get("confidence"),
+                )
+            )
+
+    return MapResponse(
+        input=initial_state, validated_mappings=normalized, raw_state=result_state
+    )

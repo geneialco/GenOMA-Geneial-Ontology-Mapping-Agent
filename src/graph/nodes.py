@@ -9,9 +9,8 @@ import re
 from src.config.agents import AGENT_LLM_MAP
 from src.prompts.template import apply_prompt_template
 import requests
-from typing import Dict, Any
 from src.graph.types import MappingState
-from src.tools.umls_tools import get_cui_from_ontology, get_ancestors, get_cui_info, get_hpo_from_cui
+from src.tools.umls_tools import get_cui_from_ontology, get_ancestors, get_cui_info
 
 # UMLS API Base URL for ontology queries
 API_BASE_URL = "https://ontology.jax.org/api/hp/search"

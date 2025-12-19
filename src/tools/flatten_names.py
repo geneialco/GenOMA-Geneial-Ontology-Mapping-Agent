@@ -1,4 +1,3 @@
-import re
 def flatten_names(name_set):
     flat_names = []
     for n in name_set:
@@ -7,4 +6,3 @@ def flatten_names(name_set):
         else:
             flat_names.append(n)
     return flat_names
-
