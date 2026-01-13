@@ -153,9 +153,7 @@ Root directory:
   main.py              # FastAPI server entry point
   test.ipynb           # interactive testing & batch processing
   requirements.txt     # Python dependencies
-  .env.example         # environment template
-  gc.xlsx              # sample input (questions)
-  mapped_gc.xlsx       # sample output (mappings)
+  notebooks/           # Notebooks for testing
 ```
 
 ## ⚗️ Agent Workflow
