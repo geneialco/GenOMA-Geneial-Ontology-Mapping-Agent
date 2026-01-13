@@ -6,6 +6,7 @@ including medical term extraction, UMLS querying, ranking, validation, and refin
 
 import json
 import logging
+import os
 import re
 from typing import List
 
@@ -17,7 +18,9 @@ from src.prompts.template import apply_prompt_template
 from src.tools.umls_tools import get_ancestors, get_cui_from_ontology, get_cui_info
 
 # UMLS API Base URL for ontology queries
-API_BASE_URL = "https://ontology.jax.org/api/hp/search"
+API_BASE_URL = (
+    os.getenv("UMLS_API_BASE_URL", "https://ontology.jax.org/api/hp") + "/search"
+)
 
 logger = logging.getLogger(__name__)
 

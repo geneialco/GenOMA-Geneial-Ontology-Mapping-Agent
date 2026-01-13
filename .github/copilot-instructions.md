@@ -17,7 +17,6 @@ GenOMA is a LangGraph-based agent designed to map clinical/survey text to Human 
 
 ### External Integrations
 - **Ontology API**: The agent queries `https://ontology.jax.org/api/hp/search` directly in `src/graph/nodes.py`.
-  - *Note*: `src/tools/umls_tools.py` points to `localhost:8000`. This appears to be for a local mock or legacy service. **Prefer `src/graph/nodes.py` logic for live API interactions.**
 - **LLM**: OpenAI models via LangChain. Configuration is in `src/config/agents.py` and `src/agents/llm.py`.
 
 ## Development Workflows
