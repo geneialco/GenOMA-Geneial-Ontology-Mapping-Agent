@@ -12,10 +12,9 @@ from typing import List
 
 import requests
 
-from src.config.agents import AGENT_LLM_MAP
+from src.agents import AGENT_LLM_MAP
 from src.graph.types import MappingState
 from src.prompts.template import apply_prompt_template
-from src.tools.umls_tools import get_ancestors, get_cui_from_ontology, get_cui_info
 
 # UMLS API Base URL for ontology queries
 API_BASE_URL = (
@@ -129,8 +128,6 @@ def is_question_mappable_node(state: MappingState) -> MappingState:
 
 
 # state: text, is_mappable, mappability_retry_count
-
-
 def extract_medical_terms_radio_node(state: MappingState) -> MappingState:
     """Extract medical terms from radio button survey questions."""
     return _extract_medical_terms(state, "extract_medical_term_radio_from_survey")
@@ -182,19 +179,16 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
         else:
             try:
                 data = resp.json()
-                results = data.get("terms", [])  # HPO 的返回字段
+                results = data.get("terms", [])
             except Exception as e:
                 logger.error(f"JSON parse error for term '{term}': {e}")
                 results = []
 
-            # 适配为下游通用的候选结构
             candidates = [
                 {
-                    "code": r.get("id"),  # ← HPO 的 id 映射到原来的 code
-                    "term": r.get("name"),  # ← HPO 的 name 映射到原来的 term
-                    "description": r.get(
-                        "definition"
-                    ),  # ← HPO 的 definition 映射到原来的 description
+                    "code": r.get("id"),
+                    "term": r.get("name"),
+                    "description": r.get("definition"),
                     "synonyms": r.get("synonyms", []),
                     "xrefs": r.get("xrefs", []),
                 }
@@ -209,12 +203,10 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
         all_results.append({"original": term, "candidates": []})
 
     logger.debug(f"Final HPO mappings: {all_results}")
-    return {**state, "umls_mappings": all_results}  # 保持键名以兼容后续节点
+    return {**state, "umls_mappings": all_results}
 
 
 # state: text, is_mappable, mappability_retry_count, extracted_terms, umls_mappings
-
-
 def retry_with_llm_rewrite_node(state: MappingState) -> MappingState:
     """
     Retry term extraction with LLM rewrite when no UMLS candidates are found.
@@ -274,8 +266,6 @@ def retry_with_llm_rewrite_node(state: MappingState) -> MappingState:
 
 
 # state: text, is_mappable, mappability_retry_count, extracted_terms, umls_mappings, history_rewritten_terms,retry_count
-
-
 def rank_mappings_node(state: MappingState) -> MappingState:
     """
     Rank UMLS mapping candidates by confidence using LLM evaluation.
@@ -353,8 +343,6 @@ def rank_mappings_node(state: MappingState) -> MappingState:
 
 
 # state: text,is_mappable,mappability_retry_count,extracted_terms,umls_mappings,history_rewritten_terms,retry_count,ranked_mappings
-
-
 def validate_mapping_node(state: MappingState) -> MappingState:
     """
     Validate and select the best mapping for each medical term.
@@ -450,108 +438,3 @@ def validate_mapping_node(state: MappingState) -> MappingState:
 
 
 # state: text,is_mappable,mappability_retry_count,extracted_terms,umls_mappings,history_rewritten_terms,retry_count,ranked_mappings,validated_mappings
-
-
-def gather_ancestor_candidates_node(state: MappingState) -> MappingState:
-    """
-    Refine mappings using ancestor concepts from the ontology hierarchy.
-
-    This node is triggered when the confidence of the best match is below threshold.
-    It retrieves ancestor concepts from the ontology hierarchy and uses an LLM to
-    select a more appropriate mapping from the broader context.
-
-    Args:
-        state (MappingState): Current workflow state with validated mappings
-
-    Returns:
-        MappingState: Updated state with refined mapping using ancestor concepts
-    """
-    logger.debug("Entered gather_ancestor_candidates_node")
-    logger.debug(f"State snapshot: {json.dumps(state, indent=2, default=str)}")
-
-    validated_list = state.get("validated_mappings", [])
-    if not validated_list or not isinstance(validated_list, list):
-        return {**state, "refine_mapping": {}}
-
-    validated = validated_list[0]
-    matched_code = validated.get("best_match_code", "")
-    if not matched_code:
-        return {**state, "refine_mapping": {}}
-
-    # Step 1: Get CUI (Concept Unique Identifier) from ontology code
-    cui = get_cui_from_ontology(matched_code)
-    if not cui:
-        return {**state, "refine_mapping": {}}
-    logger.debug(f"CUI: {cui}")
-
-    # Step 2: Get ancestor CUIs from the ontology hierarchy
-    ancestors_data = get_ancestors(cui)
-    logger.debug(f"Ancestors data: {ancestors_data}")
-    ancestor_cuis = ancestors_data.get("ancestors", [])
-    if not ancestor_cuis:
-        return {**state, "refine_mapping": {}}
-    logger.debug(f"Ancestor CUIs: {ancestor_cuis}")
-
-    # Step 3: Get detailed information for each ancestor CUI
-    candidate_details = []
-    for ancestor_cui in ancestor_cuis:
-        try:
-            info = get_cui_info(ancestor_cui)
-            if info.get("cui") and info.get("name"):
-                candidate_details.append(info)
-        except Exception as e:
-            logger.error(f"Error retrieving CUI info for {ancestor_cui}: {e}")
-            continue
-    logger.debug(f"Candidate details: {candidate_details}")
-    if not candidate_details:
-        return {**state, "refine_mapping": {}}
-
-    # Step 4: Build prompt context with ancestor candidates
-    survey_text = state.get("text", "")
-    candidate_list = "\n".join(
-        [f"- {c['cui']} ({c['name']})" for c in candidate_details]
-    )
-
-    prompt_context = {
-        "survey_text": survey_text,
-        "validated_mappings": validated_list,
-        "candidate_list": candidate_list,
-    }
-
-    prompt = apply_prompt_template("refine_mapping", prompt_context)
-    logger.debug(f"Prompt: {prompt}")
-
-    # Step 5: Call LLM to select best ancestor candidate
-    try:
-        response = AGENT_LLM_MAP["refine_mapping"].invoke(prompt)
-        logger.debug(f"Response: {response}")
-        raw_output = str(response.content).strip()
-        cleaned = re.sub(
-            r"```(?:json)?\s*(.*?)\s*```", r"\1", raw_output, flags=re.DOTALL
-        ).strip()
-        parsed = json.loads(cleaned)
-    except Exception as e:
-        logger.error(f"Error during LLM refinement: {e}")
-        return {**state, "refine_mapping": {}}
-
-    refined_code = parsed.get("refined_code", "").strip()
-    refined_term = parsed.get("refined_term", "").strip()
-    if not refined_code or not refined_term:
-        return {**state, "refine_mapping": {}}
-
-    try:
-        refined_confidence = _parse_confidence(parsed.get("confidence", "0"))
-    except Exception:
-        refined_confidence = 0.0
-
-    logger.info(f"LLM refined_term: {refined_term}")
-    logger.info(f"LLM refined_code: {refined_code}")
-
-    return {
-        **state,
-        "refine_mapping": {
-            "refined_term": refined_term,
-            "refined_code": refined_code,
-            "confidence": refined_confidence,
-        },
-    }

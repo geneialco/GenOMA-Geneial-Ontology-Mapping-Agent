@@ -1,21 +1,22 @@
 from langgraph.graph import StateGraph
+
+from experiments.ablation_nodes import gather_ancestor_candidates_node
 from src.graph.nodes import (
-    is_question_mappable_node,
     extract_medical_terms_checkbox_node,
     extract_medical_terms_radio_node,
     fetch_umls_terms_node,
+    is_question_mappable_node,
     rank_mappings_node,
     validate_mapping_node,
     # retry_with_llm_rewrite_node,  # Removed
-    gather_ancestor_candidates_node
 )
 from src.graph.types import MappingState
-
 
 # (Optional) To completely remove the retry logic, you can delete this function.
 # If it might be needed later for A/B replication, you can also keep it but not use it.
 # def should_retry_with_llm_rewrite(state: MappingState) -> bool:
 #     ...
+
 
 def should_refine_with_ancestors(state: MappingState) -> bool:
     validated_list = state.get("validated_mappings", [])
@@ -43,9 +44,9 @@ graph.add_node("extract_medical_terms_radio", extract_medical_terms_radio_node)
 graph.add_node("fetch_umls_terms", fetch_umls_terms_node)
 graph.add_node("rank_mappings", rank_mappings_node)
 graph.add_node("validate_mapping", validate_mapping_node)
-# graph.add_node("retry_with_llm_rewrite", retry_with_llm_rewrite_node)  
+# graph.add_node("retry_with_llm_rewrite", retry_with_llm_rewrite_node)
 graph.add_node("gather_ancestor_candidates", gather_ancestor_candidates_node)
-graph.add_node("choose_extraction", lambda state: state)  
+graph.add_node("choose_extraction", lambda state: state)
 
 # Entrance
 graph.set_entry_point("is_question_mappable")
@@ -54,10 +55,7 @@ graph.set_entry_point("is_question_mappable")
 graph.add_conditional_edges(
     "is_question_mappable",
     lambda state: state.get("is_mappable", False),
-    {
-        True: "choose_extraction",
-        False: "__end__"
-    }
+    {True: "choose_extraction", False: "__end__"},
 )
 
 # 2. choose_extraction → Enter the specific extraction node
@@ -66,8 +64,8 @@ graph.add_conditional_edges(
     choose_extraction_node,
     {
         "extract_medical_terms_checkbox": "extract_medical_terms_checkbox",
-        "extract_medical_terms_radio": "extract_medical_terms_radio"
-    }
+        "extract_medical_terms_radio": "extract_medical_terms_radio",
+    },
 )
 
 # 3. After extraction → fetch
@@ -84,10 +82,7 @@ graph.add_edge("rank_mappings", "validate_mapping")
 graph.add_conditional_edges(
     "validate_mapping",
     should_refine_with_ancestors,
-    {
-        True: "gather_ancestor_candidates",
-        False: "__end__"
-    }
+    {True: "gather_ancestor_candidates", False: "__end__"},
 )
 
 graph.add_edge("gather_ancestor_candidates", "__end__")

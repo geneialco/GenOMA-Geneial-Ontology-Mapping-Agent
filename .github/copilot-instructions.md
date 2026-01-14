@@ -17,13 +17,13 @@ GenOMA is a LangGraph-based agent designed to map clinical/survey text to Human 
 
 ### External Integrations
 - **Ontology API**: The agent queries `https://ontology.jax.org/api/hp/search` directly in `src/graph/nodes.py`.
-- **LLM**: OpenAI models via LangChain. Configuration is in `src/config/agents.py` and `src/agents/llm.py`.
+- **LLM**: OpenAI models via LangChain. Configuration is in `src/agents.py`.
 
 ## Development Workflows
 
 ### Testing & Execution
-- **Primary Interface**: `test.ipynb` is the main way to run and test the agent.
-  - Use `test.ipynb` for single-query tests and batch processing (Excel).
+- **Primary Interface**: `experiments/test.ipynb` is the main way to run and test the agent.
+  - Use `experiments/test.ipynb` for single-query tests and batch processing (Excel).
 - **FastAPI Stub**: `main.py` is currently a placeholder/stub. Do not use it as the primary entry point for agent logic.
 - **Environment**: Ensure `.env` contains `OPENAI_API_KEY`.
 
@@ -51,4 +51,4 @@ GenOMA is a LangGraph-based agent designed to map clinical/survey text to Human 
 - `src/graph/nodes.py`: Business logic for each step.
 - `src/graph/types.py`: Data schema.
 - `src/prompts/`: LLM prompt templates.
-- `test.ipynb`: Interactive testing playground.
+- `experiments/test.ipynb`: Interactive testing playground.

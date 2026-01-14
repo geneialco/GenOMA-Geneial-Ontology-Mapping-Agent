@@ -1,4 +1,4 @@
-# GenOMA (Geneial Ontology Mapping Agent) — v2.0
+# GenOMA (Geneial Ontology Mapping Agent)
 
 A modular agent system for mapping clinical or survey questions to standardized biomedical ontologies (e.g., HPO) using LangGraph. The agent integrates LLM-based term extraction, ontology candidate retrieval, ranking, and validation to produce robust, context-aware mappings suitable for symptom normalization workflows.
 
@@ -39,9 +39,9 @@ OPENAI_API_KEY=your_key_here
 
 **Prerequisites**: Complete installation and set your `OPENAI_API_KEY` in `.env`.
 
-### Option 1: Interactive Notebook (`test.ipynb`)
+### Option 1: Interactive Notebook (`experiments/test.ipynb`)
 
-Open `test.ipynb` in Jupyter and run the first cell:
+Open `experiments/test.ipynb` in Jupyter and run the first cell:
 
 ```python
 # Single text mapping test
@@ -64,9 +64,9 @@ print(result)
 
 **Output**: A dictionary with keys like `extracted_terms`, `candidates`, `best_match_code`, `best_match_term`, and `confidence`.
 
-### Option 2: Batch Mapping from Excel (`test.ipynb`)
+### Option 2: Batch Mapping from Excel (`experiments/test.ipynb`)
 
-Run the cells after the single-text demo in `test.ipynb` following this order: **read data → batch process → export results**.
+Run the cells after the single-text demo in `experiments/test.ipynb` following this order: **read data → batch process → export results**.
 
 **Input**: Excel file (e.g., `gc.xlsx`) with a column named `"Question"` containing the text to map.
 
@@ -129,31 +129,22 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ```text
 src/
-  agents/
-    agents.py        # agent registry & high-level runner
-    llm.py           # LLM config (model, params, retries)
-  config/
-    agents.py        # shared config helpers / defaults
+  agents.py        # agent registry, LLM config (model, params, retries), & high-level runner
   graph/
     __init__.py
     builder.py       # main graph compilation
-    builder_without_rank_node.py
-    builder_without_retry_node.py
-    builder_without_validate_node.py
     nodes.py         # extract / fetch / rank / validate / retry nodes
     types.py         # MappingState TypedDict
   prompts/
     *.md             # prompt templates for each node
     template.py      # prompt loading helper
-  tools/
-    umls_tools.py    # ontology API helpers
-    flatten_names.py # utility functions
 
 Root directory:
   main.py              # FastAPI server entry point
-  test.ipynb           # interactive testing & batch processing
   requirements.txt     # Python dependencies
-  notebooks/           # Notebooks for testing
+  experiments/         # Notebooks and modules for testing
+  pyproject.toml       # uv project config
+  .env.example         # example .env config
 ```
 
 ## ⚗️ Agent Workflow
