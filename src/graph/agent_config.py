@@ -6,8 +6,6 @@ and builds/exposes the main agent for medical term mapping workflows.
 
 from langchain_openai import ChatOpenAI
 
-from src.graph.builder import build_umls_mapper_graph
-
 # Configuration mapping for different agent tasks to their corresponding LLM models
 # Each task uses a specific model with optimized parameters for its purpose
 AGENT_LLM_MAP = {
@@ -28,7 +26,3 @@ AGENT_LLM_MAP = {
     # Specificity evaluation - uses GPT-5 for nuanced specificity assessment
     "evaluate_specificity_with_llm": ChatOpenAI(model="gpt-5"),
 }
-
-# Build and expose the main UMLS mapping agent
-# This agent handles the complete workflow from medical term extraction to ontology mapping
-umls_mapper_agent = build_umls_mapper_graph()

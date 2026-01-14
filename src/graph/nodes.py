@@ -12,7 +12,7 @@ from typing import List
 
 import requests
 
-from src.agents import AGENT_LLM_MAP
+from src.graph.agent_config import AGENT_LLM_MAP
 from src.graph.types import MappingState
 from src.prompts.template import apply_prompt_template
 
