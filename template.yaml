@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: GenOMA - Geneial Ontology Mapping Agent API
+
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 512
+    Runtime: python3.11
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prd
+      - tst
+    Description: Deployment stage
+
+  OpenAIApiKeySSMParam:
+    Type: String
+    Default: /genoma/openai-api-key
+    Description: SSM Parameter Store path for OpenAI API Key (SecureString)
+
+Resources:
+  GenOMAFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src.handler.lambda_handler
+      CodeUri: .
+      Description: GenOMA ontology mapping Lambda function
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Sub '{{resolve:ssm-secure:${OpenAIApiKeySSMParam}}}'
+          STAGE: !Ref Stage
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: !Ref OpenAIApiKeySSMParam
+      Events:
+        MapApi:
+          Type: Api
+          Properties:
+            Path: /map
+            Method: POST
+            RestApiId: !Ref GenOMAApi
+        HealthApi:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: GET
+            RestApiId: !Ref GenOMAApi
+
+  GenOMAApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Cors:
+        AllowMethods: "'POST, GET, OPTIONS'"
+        AllowHeaders: "'Content-Type, Authorization'"
+        AllowOrigin: "'*'"
+
+Outputs:
+  GenOMAApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${GenOMAApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+

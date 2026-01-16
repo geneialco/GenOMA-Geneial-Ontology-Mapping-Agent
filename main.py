@@ -1,19 +1,29 @@
 # main.py
 """
 Main FastAPI application entry point for the UMLS Mapping LangGraph-based Agent.
-This module provides a simple REST API interface for testing the medical term mapping functionality.
+
+This module provides a REST API interface for testing the medical term mapping
+functionality. For AWS Lambda deployment, see src/lambda_handler.py.
+
+Usage (local development):
+    uvicorn main:app --reload
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from src.graph.builder import build_umls_mapper_graph
+from src.graph.types import MappingState
 
-# Initialize FastAPI application
-app = FastAPI()
+# Initialize FastAPI application with metadata
+app = FastAPI(
+    title="GenOMA API",
+    description="Geneial Ontology Mapping Agent - Maps clinical text to HPO terms",
+    version="1.0.0",
+)
 
 # Allow local frontend during development
 app.add_middleware(
@@ -44,6 +54,12 @@ class MapResponse(BaseModel):
     raw_state: Dict[str, Any] = {}
 
 
+@app.get("/health")
+def health_check():
+    """Health check endpoint for load balancers and monitoring."""
+    return {"status": "healthy", "service": "genoma-api"}
+
+
 @app.post("/map", response_model=MapResponse)
 def map_text(req: MapRequest):
     """Invoke the UMLS/HPO mapping LangGraph workflow.
@@ -59,21 +75,17 @@ def map_text(req: MapRequest):
             status_code=500, detail=f"Failed to build mapping graph: {e}"
         )
 
-    initial_state = {
-        "text": req.text,
-        "field_type": req.field_type,
-        "ontology": req.ontology,
-    }
+    initial_state = cast(
+        MappingState,
+        {
+            "text": req.text,
+            "field_type": req.field_type,
+            "ontology": req.ontology,
+        },
+    )
 
     try:
-        # compiled LangGraph object should expose `invoke` or `run` — try `invoke` first
-        if hasattr(graph, "invoke"):
-            result_state = graph.invoke(initial_state)
-        elif hasattr(graph, "run"):
-            result_state = graph.run(initial_state)
-        else:
-            # fall back to calling as a function if applicable
-            result_state = graph(initial_state)
+        result_state = graph.invoke(initial_state)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Graph invocation failed: {e}")
 
@@ -107,5 +119,7 @@ def map_text(req: MapRequest):
             )
 
     return MapResponse(
-        input=initial_state, validated_mappings=normalized, raw_state=result_state
+        input=dict(initial_state),
+        validated_mappings=normalized,
+        raw_state=dict(result_state),
     )

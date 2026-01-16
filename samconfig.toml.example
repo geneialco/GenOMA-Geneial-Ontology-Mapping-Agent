@@ -1,0 +1,60 @@
+# AWS SAM CLI configuration file
+# This file is auto-generated and typically should not be committed.
+# Included here as a template - copy to samconfig.toml and fill in values.
+
+# More information about the configuration file can be found here:
+# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
+version = 0.1
+
+# IMPORTANT: Before deploying, create the SSM Parameter Store SecureString:
+#   aws ssm put-parameter \
+#     --name /genoma/openai-api-key \
+#     --value "your-openai-api-key-here" \
+#     --type SecureString \
+#     --description "OpenAI API Key for GenOMA"
+
+[default.global.parameters]
+stack_name = "genoma-api"
+
+[default.build.parameters]
+use_container = true
+cached = true
+parallel = true
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+
+[default.package.parameters]
+resolve_s3 = true
+
+[default.sync.parameters]
+watch = true
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"
+
+[default.validate.parameters]
+lint = true
+
+[dev.deploy.parameters]
+stack_name = "dev-genoma-api"
+resolve_s3 = true
+s3_prefix = "dev-genoma-api"
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Stage=dev OpenAIApiKeySSMParameter=/genoma/openai-api-key"
+
+[prd.deploy.parameters]
+stack_name = "prd-genoma-api"
+resolve_s3 = true
+s3_prefix = "prd-genoma-api"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Stage=prd OpenAIApiKeySSMParameter=/genoma/openai-api-key"
