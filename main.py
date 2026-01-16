@@ -1,4 +1,3 @@
-# main.py
 """
 Main FastAPI application entry point for the UMLS Mapping LangGraph-based Agent.
 
@@ -11,12 +10,16 @@ Usage (local development):
 
 from typing import Any, Dict, List, Optional, cast
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from src.graph.builder import build_umls_mapper_graph
 from src.graph.types import MappingState
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize FastAPI application with metadata
 app = FastAPI(
