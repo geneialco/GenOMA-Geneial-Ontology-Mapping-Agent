@@ -6,18 +6,10 @@
 # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
 version = 0.1
 
-# IMPORTANT: Before deploying, create the SSM Parameter Store SecureString:
-#   aws ssm put-parameter \
-#     --name /genoma/openai-api-key \
-#     --value "your-openai-api-key-here" \
-#     --type SecureString \
-#     --description "OpenAI API Key for GenOMA"
-
 [default.global.parameters]
 stack_name = "genoma-api"
 
 [default.build.parameters]
-use_container = true
 cached = true
 parallel = true
 
@@ -48,7 +40,7 @@ s3_prefix = "dev-genoma-api"
 region = "us-east-1"
 confirm_changeset = false
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Stage=dev OpenAIApiKeySSMParameter=/genoma/openai-api-key"
+parameter_overrides = "Stage=dev"
 
 [prd.deploy.parameters]
 stack_name = "prd-genoma-api"
@@ -57,4 +49,4 @@ s3_prefix = "prd-genoma-api"
 region = "us-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Stage=prd OpenAIApiKeySSMParameter=/genoma/openai-api-key"
+parameter_overrides = "Stage=prd"

@@ -2,7 +2,7 @@
 Main FastAPI application entry point for the UMLS Mapping LangGraph-based Agent.
 
 This module provides a REST API interface for testing the medical term mapping
-functionality. For AWS Lambda deployment, see src/lambda_handler.py.
+functionality. For AWS Lambda deployment, see src/handler.py.
 
 Usage (local development):
     uvicorn main:app --reload

@@ -1,0 +1,6 @@
+-r ./requirements-dev.txt
+
+jupyter>=1.1.1
+matplotlib>=3.10.8
+numpy>=2.4.1
+pandas>=3.0.0

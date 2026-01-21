@@ -1,6 +1,9 @@
-# src/lambda_handler.py
 """
 AWS Lambda handler for GenOMA API.
+
+NOTE: This module is only used for AWS deployment.
+If you're running GenOMA locally or in notebooks, you can ignore this file.
+See main.py for a local FastAPI server reference implementation.
 
 This module provides the Lambda entry point that processes API Gateway events
 and invokes the LangGraph-based ontology mapping workflow.

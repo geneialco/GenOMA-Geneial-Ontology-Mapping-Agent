@@ -18,13 +18,37 @@ A modular agent system for mapping clinical or survey questions to standardized 
 
 ## Installation
 
+Option A — manual venv + pip requirements:
+
 ```bash
 # Create virtual environment
 python -m venv .venv
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Minimal runtime deps (used by AWS SAM/Lambda builds)
+pip install -r src/requirements.txt
+
+# Optional: FastAPI server tooling
+pip install -r requirements-server.txt
+
+# Optional: notebooks/data analysis
+pip install -r requirements-analysis.txt
+```
+
+Option B — uv-managed env with dependency groups:
+
+```bash
+uv venv .venv
+source .venv/bin/activate
+
+# Runtime only (Lambda/SAM)
+uv sync --frozen
+
+# Add FastAPI serer tooling
+uv sync --extras server
+
+# Add notebooks/data analysis
+uv sync --extras analysis
 ```
 
 **Configuration**:
@@ -123,28 +147,31 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 }
 ```
 
-**Web UI**: See [`../genoma-web/README.md`](../genoma-web/README.md) for a simple HTML/JS frontend that uses this API.
-
 ## 📁 Project Structure
 
 ```text
 src/
-  agents.py        # agent registry, LLM config (model, params, retries), & high-level runner
+  requirements.txt   # Core runtime deps
+  handler.py         # AWS Lambda entry point
   graph/
     __init__.py
-    builder.py       # main graph compilation
-    nodes.py         # extract / fetch / rank / validate / retry nodes
+    builder.py       # Main graph compilation
+    nodes.py         # Extract / fetch / rank / validate / retry nodes
     types.py         # MappingState TypedDict
   prompts/
-    *.md             # prompt templates for each node
-    template.py      # prompt loading helper
+    *.md             # Prompt templates for each node
+    template.py      # Prompt loading helper
 
-Root directory:
-  main.py              # FastAPI server entry point
-  requirements.txt     # Python dependencies
-  experiments/         # Notebooks and modules for testing
-  pyproject.toml       # uv project config
-  .env.example         # example .env config
+Public usage:
+  main.py                   # Local FastAPI server
+  experiments/              # Notebooks for testing and batch processing
+  requirements-server.txt   # FastAPI deps for local runs
+  requirements-analysis.txt # Notebook/data analysis deps
+  pyproject.toml            # uv project config
+
+AWS deployment:
+  template.yaml             # SAM CloudFormation template
+  samconfig.toml.example    # SAM config template
 ```
 
 ## ⚗️ Agent Workflow
@@ -160,3 +187,37 @@ Root directory:
 7. `retry_with_llm_rewrite` — (Optional) Rewrites query and retries if confidence < 0.9
 
 **State Management**: All nodes operate on a shared `MappingState` dictionary defined in [`src/graph/types.py`](src/graph/types.py).
+
+## 🚀 AWS Deployment
+
+GenOMA can be deployed as a serverless API using AWS Lambda and API Gateway with AWS SAM (Serverless Application Model).
+
+**Prerequisites**:
+
+- AWS CLI configured with appropriate credentials
+- AWS SAM CLI installed ([installation guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html))
+- OpenAI API key stored in AWS Systems Manager Parameter Store
+
+**Setup**:
+
+```bash
+# Store API key in Parameter Store (one-time setup)
+aws ssm put-parameter \
+  --name /genoma/openai-api-key \
+  --value "your-openai-api-key" \
+  --type SecureString
+
+# Configure SAM deployment settings
+cp samconfig.toml.example samconfig.toml
+# Edit samconfig.toml with your AWS account/region settings
+```
+
+**Build and Deploy**:
+
+```bash
+# Build the Lambda package
+sam build
+
+# Deploy to AWS
+sam deploy
+```

@@ -6,7 +6,7 @@ Globals:
   Function:
     Timeout: 120
     MemorySize: 512
-    Runtime: python3.11
+    Runtime: python3.13
     Architectures:
       - x86_64
     Environment:
@@ -23,40 +23,28 @@ Parameters:
       - tst
     Description: Deployment stage
 
-  OpenAIApiKeySSMParam:
-    Type: String
-    Default: /genoma/openai-api-key
-    Description: SSM Parameter Store path for OpenAI API Key (SecureString)
-
 Resources:
-  GenOMAFunction:
+  GenomaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src.handler.lambda_handler
-      CodeUri: .
+      Handler: handler.lambda_handler
+      CodeUri: ./src/
       Description: GenOMA ontology mapping Lambda function
-      Environment:
-        Variables:
-          OPENAI_API_KEY: !Sub '{{resolve:ssm-secure:${OpenAIApiKeySSMParam}}}'
-          STAGE: !Ref Stage
-      Policies:
-        - SSMParameterReadPolicy:
-            ParameterName: !Ref OpenAIApiKeySSMParam
       Events:
         MapApi:
           Type: Api
           Properties:
             Path: /map
             Method: POST
-            RestApiId: !Ref GenOMAApi
+            RestApiId: !Ref GenomaApi
         HealthApi:
           Type: Api
           Properties:
             Path: /health
             Method: GET
-            RestApiId: !Ref GenOMAApi
+            RestApiId: !Ref GenomaApi
 
-  GenOMAApi:
+  GenomaApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Stage
@@ -66,7 +54,7 @@ Resources:
         AllowOrigin: "'*'"
 
 Outputs:
-  GenOMAApiUrl:
-    Description: API Gateway endpoint URL
-    Value: !Sub "https://${GenOMAApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+  GenomaApiUrl:
+    Description: GenOMA API Gateway endpoint URL
+    Value: !Sub "https://${GenomaApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
 
