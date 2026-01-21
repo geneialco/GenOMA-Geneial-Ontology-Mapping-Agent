@@ -14,7 +14,9 @@ A modular agent system for mapping clinical or survey questions to standardized 
 ## Requirements
 
 - **Python 3.11+** (recommended)
-- **OpenAI API Key** (required for LLM calls)
+- **LLM Provider**: One of the following:
+  - **OpenAI API Key** (for local development)
+  - **AWS Bedrock Access** (for AWS Lambda deployment)
 
 ## Installation
 
@@ -53,11 +55,17 @@ uv sync --extras analysis
 
 **Configuration**:
 
-Create a `.env` file in the project root and add your OpenAI API key:
+Create a `.env` file in the project root:
 
 ```dotenv
+# OpenAI API key (for local development)
 OPENAI_API_KEY=your_key_here
+
+# LLM provider: "openai" (default for local) or "bedrock" (for AWS)
+LLM_PROVIDER=openai
 ```
+
+**Note**: When deployed to AWS Lambda, `LLM_PROVIDER` is automatically set to `bedrock` in `template.yaml`.
 
 ## How to Use
 
@@ -155,6 +163,7 @@ src/
   handler.py         # AWS Lambda entry point
   graph/
     __init__.py
+    agent_config.py  # LLM provider configuration (OpenAI/Bedrock)
     builder.py       # Main graph compilation
     nodes.py         # Extract / fetch / rank / validate / retry nodes
     types.py         # MappingState TypedDict
@@ -196,20 +205,19 @@ GenOMA can be deployed as a serverless API using AWS Lambda and API Gateway with
 
 - AWS CLI configured with appropriate credentials
 - AWS SAM CLI installed ([installation guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html))
-- OpenAI API key stored in AWS Systems Manager Parameter Store
+- AWS Bedrock access enabled in your AWS account (for Claude 3.5 Sonnet model)
+
+**LLM Provider**: When deployed to AWS, GenOMA automatically uses **AWS Bedrock** (Claude 3.5 Sonnet) instead of OpenAI. This is configured via the `LLM_PROVIDER=bedrock` environment variable in `template.yaml`.
 
 **Setup**:
 
 ```bash
-# Store API key in Parameter Store (one-time setup)
-aws ssm put-parameter \
-  --name /genoma/openai-api-key \
-  --value "your-openai-api-key" \
-  --type SecureString
-
 # Configure SAM deployment settings
 cp samconfig.toml.example samconfig.toml
 # Edit samconfig.toml with your AWS account/region settings
+
+# Ensure Bedrock access is enabled in your AWS account
+# Visit: https://console.aws.amazon.com/bedrock/
 ```
 
 **Build and Deploy**:

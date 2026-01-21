@@ -12,6 +12,7 @@ Globals:
     Environment:
       Variables:
         LOG_LEVEL: INFO
+        LLM_PROVIDER: bedrock
 
 Parameters:
   Stage:

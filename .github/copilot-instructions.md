@@ -17,7 +17,11 @@ GenOMA is a LangGraph-based agent designed to map clinical/survey text to Human 
 
 ### External Integrations
 - **Ontology API**: The agent queries `https://ontology.jax.org/api/hp/search` directly in `src/graph/nodes.py`.
-- **LLM**: OpenAI models via LangChain. Configuration is in `src/agents.py`.
+- **LLM Providers**: Supports both OpenAI and AWS Bedrock via LangChain.
+  - Configuration is in `src/graph/agent_config.py`.
+  - Provider selection via `LLM_PROVIDER` environment variable:
+    - `"openai"` (default) - for local development
+    - `"bedrock"` - for AWS Lambda deployment (uses Claude 3.5 Sonnet)
 
 ## Development Workflows
 
@@ -25,7 +29,9 @@ GenOMA is a LangGraph-based agent designed to map clinical/survey text to Human 
 - **Primary Interface**: `experiments/test.ipynb` is the main way to run and test the agent.
   - Use `experiments/test.ipynb` for single-query tests and batch processing (Excel).
 - **FastAPI Stub**: `main.py` is currently a placeholder/stub. Do not use it as the primary entry point for agent logic.
-- **Environment**: Ensure `.env` contains `OPENAI_API_KEY`.
+- **Environment**: 
+  - Local: Ensure `.env` contains `OPENAI_API_KEY` and `LLM_PROVIDER=openai` (default).
+  - AWS: `LLM_PROVIDER=bedrock` is set automatically in `template.yaml`.
 
 ### Modifying the Agent
 1.  **Prompts**: Edit markdown templates in `src/prompts/`.
@@ -47,8 +53,10 @@ GenOMA is a LangGraph-based agent designed to map clinical/survey text to Human 
 - **Type Hinting**: Use `MappingState` for node arguments and return types.
 
 ## Key Files Map
+- `src/graph/agent_config.py`: LLM provider configuration (OpenAI/Bedrock).
 - `src/graph/builder.py`: Graph orchestration.
 - `src/graph/nodes.py`: Business logic for each step.
 - `src/graph/types.py`: Data schema.
 - `src/prompts/`: LLM prompt templates.
 - `experiments/test.ipynb`: Interactive testing playground.
+- `template.yaml`: AWS SAM deployment configuration (sets `LLM_PROVIDER=bedrock`).
