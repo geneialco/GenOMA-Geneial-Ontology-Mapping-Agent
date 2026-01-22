@@ -49,40 +49,40 @@ def _create_bedrock_model(model_id: str, temperature: float = 0.0) -> ChatBedroc
     Returns:
         ChatBedrock: Configured Bedrock chat model instance.
     """
-    return ChatBedrock(model=model_id, temperature=temperature)
+    return ChatBedrock(model=model_id, temperature=temperature, service_tier="flex")
 
 
 # OpenAI model configurations for each agent task
 # Maps task names to (model_name, temperature) tuples
 OPENAI_MODEL_CONFIG = {
-    "is_question_mappable_to_hpo": ("gpt-4o", 0.0),
-    "extract_medical_term_from_survey": ("gpt-5", 0.0),
-    "rank_mappings": ("gpt-4", 0.0),
-    "retry_with_llm_rewrite": ("gpt-5", 0.0),
-    "validate_mapping": ("gpt-4", 0.0),
-    "refine_mapping": ("gpt-4", 0.0),
-    "rank_evaluate_with_llm": ("gpt-4o", 0.0),
-    "evaluate_specificity_with_llm": ("gpt-5", 0.0),
+    "is_question_mappable_to_hpo": ("gpt-5-mini", 0.0),
+    "extract_medical_term_from_survey": ("gpt-5.2", 0.0),
+    "rank_mappings": ("gpt-5.2", 0.0),
+    "retry_with_llm_rewrite": ("gpt-5.2", 0.0),
+    "validate_mapping": ("gpt-5.2", 0.0),
+    "refine_mapping": ("gpt-5.2", 0.0),
+    "rank_evaluate_with_llm": ("gpt-5.2", 0.0),
+    "evaluate_specificity_with_llm": ("gpt-5.2", 0.0),
 }
 
 # AWS Bedrock model configurations for each agent task
 # Maps task names to (model_id, temperature) tuples
 BEDROCK_MODEL_CONFIG = {
     "is_question_mappable_to_hpo": (
-        "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "anthropic.claude-haiku-4-5-20251001-v1:0",
         0.0,
     ),
     "extract_medical_term_from_survey": (
-        "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "anthropic.claude-sonnet-4-5-20250929-v1:0",
         0.0,
     ),
-    "rank_mappings": ("anthropic.claude-3-5-sonnet-20241022-v2:0", 0.0),
-    "retry_with_llm_rewrite": ("anthropic.claude-3-5-sonnet-20241022-v2:0", 0.0),
-    "validate_mapping": ("anthropic.claude-3-5-sonnet-20241022-v2:0", 0.0),
-    "refine_mapping": ("anthropic.claude-3-5-sonnet-20241022-v2:0", 0.0),
-    "rank_evaluate_with_llm": ("anthropic.claude-3-5-sonnet-20241022-v2:0", 0.0),
+    "rank_mappings": ("anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
+    "retry_with_llm_rewrite": ("anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
+    "validate_mapping": ("anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
+    "refine_mapping": ("anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
+    "rank_evaluate_with_llm": ("anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
     "evaluate_specificity_with_llm": (
-        "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "anthropic.claude-sonnet-4-5-20250929-v1:0",
         0.0,
     ),
 }
