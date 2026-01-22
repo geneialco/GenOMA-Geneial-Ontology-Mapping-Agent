@@ -31,6 +31,15 @@ Resources:
       Handler: handler.lambda_handler
       CodeUri: ./src/
       Description: GenOMA ontology mapping Lambda function
+      Policies:
+        - Statement:
+          - Sid: BedrockInvokePolicy
+            Effect: Allow
+            Action:
+              - bedrock:InvokeModel
+              - bedrock:InvokeModelWithResponseStream
+            Resource:
+              - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0'
       Events:
         MapApi:
           Type: Api
