@@ -1,7 +1,6 @@
 -r src/requirements.txt
 
 fastapi>=0.128.0
-langchain-openai>=1.1.7
 pydantic>=2.12.5
 python-dotenv>=1.2.1
 uvicorn[standard]>=0.40.0
