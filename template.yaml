@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: GenOMA - Geneial Ontology Mapping Agent API
 
@@ -39,32 +39,37 @@ Resources:
               - bedrock:InvokeModel
               - bedrock:InvokeModelWithResponseStream
             Resource:
-              - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0'
+              - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0"
+              - !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
       Events:
         MapApi:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /map
             Method: POST
-            RestApiId: !Ref GenomaApi
+            ApiId: !Ref GenomaApi
         HealthApi:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /health
             Method: GET
-            RestApiId: !Ref GenomaApi
+            ApiId: !Ref GenomaApi
 
   GenomaApi:
-    Type: AWS::Serverless::Api
+    Type: AWS::Serverless::HttpApi
     Properties:
-      StageName: !Ref Stage
-      Cors:
-        AllowMethods: "'POST, GET, OPTIONS'"
-        AllowHeaders: "'Content-Type, Authorization'"
-        AllowOrigin: "'*'"
+      CorsConfiguration:
+        AllowMethods:
+          - POST
+          - GET
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowOrigins:
+          - "*"
 
-Outputs:
-  GenomaApiUrl:
-    Description: GenOMA API Gateway endpoint URL
-    Value: !Sub "https://${GenomaApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
-
+# Outputs:
+#   GenomaApiUrl:
+#     Description: GenOMA API Gateway endpoint URL
+#     Value: !Sub "https://${GenomaApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"

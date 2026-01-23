@@ -34,8 +34,9 @@ def lambda_handler(event: dict, context: Any) -> dict:
     """
     logger.info("Received event: %s", json.dumps(event, default=str))
 
-    http_method = event.get("httpMethod", "")
-    path = event.get("path", "")
+    # HTTP API v2.0 format
+    http_method = event["requestContext"]["http"]["method"]
+    path = event["requestContext"]["http"]["path"]
 
     # CORS headers for all responses
     headers = {
