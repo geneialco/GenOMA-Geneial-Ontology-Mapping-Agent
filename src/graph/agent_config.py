@@ -49,7 +49,7 @@ def _create_bedrock_model(model_id: str, temperature: float = 0.0) -> ChatBedroc
     Returns:
         ChatBedrock: Configured Bedrock chat model instance.
     """
-    return ChatBedrock(model=model_id, temperature=temperature, service_tier="flex")
+    return ChatBedrock(model=model_id, temperature=temperature, service_tier="default")
 
 
 # OpenAI model configurations for each agent task
@@ -69,20 +69,20 @@ OPENAI_MODEL_CONFIG = {
 # Maps task names to (model_id, temperature) tuples
 BEDROCK_MODEL_CONFIG = {
     "is_question_mappable_to_hpo": (
-        "anthropic.claude-haiku-4-5-20251001-v1:0",
+        "global.anthropic.claude-haiku-4-5-20251001-v1:0",
         0.0,
     ),
     "extract_medical_term_from_survey": (
-        "anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
         0.0,
     ),
-    "rank_mappings": ("anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
-    "retry_with_llm_rewrite": ("anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
-    "validate_mapping": ("anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
-    "refine_mapping": ("anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
-    "rank_evaluate_with_llm": ("anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
+    "rank_mappings": ("global.anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
+    "retry_with_llm_rewrite": ("global.anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
+    "validate_mapping": ("global.anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
+    "refine_mapping": ("global.anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
+    "rank_evaluate_with_llm": ("global.anthropic.claude-sonnet-4-5-20250929-v1:0", 0.0),
     "evaluate_specificity_with_llm": (
-        "anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "global.anthropic.claude-sonnet-4-5-20250929-v1:0",
         0.0,
     ),
 }
