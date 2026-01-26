@@ -14,6 +14,9 @@ class MappingState(TypedDict, total=False):
     as data flows through different nodes in the LangGraph workflow.
     """
 
+    # === Request Tracking ===
+    request_id: str  # API Gateway request ID for correlation across logs
+
     # === Original Survey Input ===
     text: str  # Original complete survey question text
     field_type: str  # Type of survey field (radio, checkbox, short, etc.)

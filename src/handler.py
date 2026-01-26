@@ -37,6 +37,7 @@ def lambda_handler(event: dict, context: Any) -> dict:
     # HTTP API v2.0 format
     http_method = event["requestContext"]["http"]["method"]
     path = event["requestContext"]["http"]["path"]
+    request_id = event["requestContext"]["requestId"]
 
     # CORS headers for all responses
     headers = {
@@ -52,9 +53,9 @@ def lambda_handler(event: dict, context: Any) -> dict:
 
     # Route requests
     if path == "/health" and http_method == "GET":
-        return _handle_health(headers)
+        return _handle_health(headers, request_id)
     elif path == "/map" and http_method == "POST":
-        return _handle_map(event, headers)
+        return _handle_map(event, headers, request_id)
     else:
         return {
             "statusCode": 404,
@@ -63,16 +64,18 @@ def lambda_handler(event: dict, context: Any) -> dict:
         }
 
 
-def _handle_health(headers: dict) -> dict:
+def _handle_health(headers: dict, request_id: str) -> dict:
     """
     Handle health check endpoint.
 
     Parameters:
-        headers (dict): Response headers to include.
+        headers (dict): Response headers to include
+        request_id (str): API Gateway request ID
 
     Returns:
         dict: API Gateway response with health status.
     """
+    logger.info(f"{request_id} Health check")
     return {
         "statusCode": 200,
         "headers": headers,
@@ -80,7 +83,7 @@ def _handle_health(headers: dict) -> dict:
     }
 
 
-def _handle_map(event: dict, headers: dict) -> dict:
+def _handle_map(event: dict, headers: dict, request_id: str) -> dict:
     """
     Handle the /map endpoint for ontology mapping.
 
@@ -90,6 +93,7 @@ def _handle_map(event: dict, headers: dict) -> dict:
     Parameters:
         event (dict): API Gateway event containing request body.
         headers (dict): Response headers to include.
+        request_id (str): API Gateway request ID
 
     Returns:
         dict: API Gateway response with mapping results or error.
@@ -101,7 +105,9 @@ def _handle_map(event: dict, headers: dict) -> dict:
     try:
         body = json.loads(event.get("body", "{}"))
     except json.JSONDecodeError as e:
-        logger.error("Invalid JSON in request body: %s", e)
+        logger.error(
+            f"{request_id} Invalid JSON in request body - error: {e}"
+        )
         return {
             "statusCode": 400,
             "headers": headers,
@@ -113,6 +119,7 @@ def _handle_map(event: dict, headers: dict) -> dict:
     field_type = body.get("field_type")
 
     if not text or not field_type:
+        logger.error(f"{request_id} Missing required fields")
         return {
             "statusCode": 400,
             "headers": headers,
@@ -127,7 +134,7 @@ def _handle_map(event: dict, headers: dict) -> dict:
     try:
         graph = build_umls_mapper_graph()
     except Exception as e:
-        logger.exception("Failed to build mapping graph")
+        logger.exception(f"{request_id} Failed to build mapping graph")
         return {
             "statusCode": 500,
             "headers": headers,
@@ -140,6 +147,7 @@ def _handle_map(event: dict, headers: dict) -> dict:
     initial_state = cast(
         MappingState,
         {
+            "request_id": request_id,
             "text": text,
             "field_type": field_type,
             "ontology": ontology,
@@ -147,11 +155,13 @@ def _handle_map(event: dict, headers: dict) -> dict:
     )
 
     try:
-        logger.info("Invoking graph with state: %s", initial_state)
+        logger.info(
+            f"{request_id} Invoking graph - text: {text}, field_type: {field_type}"
+        )
         result_state = graph.invoke(initial_state)
-        logger.info("Graph completed successfully")
+        logger.info(f"{request_id} Graph completed successfully")
     except Exception as e:
-        logger.exception("Graph invocation failed")
+        logger.exception(f"{request_id} Graph invocation failed")
         return {
             "statusCode": 500,
             "headers": headers,

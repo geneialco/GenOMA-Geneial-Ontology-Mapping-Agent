@@ -25,12 +25,26 @@ Parameters:
     Description: Deployment stage
 
 Resources:
+  GenomaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${Stage}-genoma-api-lambda"
+      RetentionInDays: 14
+
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/apigateway/${Stage}-genoma-api"
+      RetentionInDays: 7
+
   GenomaFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: src.handler.lambda_handler
       CodeUri: .
       Description: GenOMA ontology mapping Lambda function
+      LoggingConfig:
+        LogGroup: !Ref GenomaFunctionLogGroup
       Policies:
         - Statement:
           - Sid: BedrockInvokePolicy
@@ -57,6 +71,7 @@ Resources:
 
   GenomaApi:
     Type: AWS::Serverless::HttpApi
+    DependsOn: ApiGatewayLogGroup
     Properties:
       CorsConfiguration:
         AllowMethods:
@@ -68,6 +83,10 @@ Resources:
           - Authorization
         AllowOrigins:
           - "*"
+      AccessLogSettings:
+        DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
+        Format: >-
+          {"requestId":"$context.requestId","ip":"$context.identity.sourceIp","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","routeKey":"$context.routeKey","status":"$context.status","errorMessage":"$context.error.message"}
 
 Outputs:
   GenomaApiUrl:
