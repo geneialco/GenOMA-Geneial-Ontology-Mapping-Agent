@@ -71,16 +71,12 @@ def _extract_medical_terms(state: MappingState, prompt_name: str) -> MappingStat
             break
 
         retries += 1
-        logger.warning(
-            f"{state.get('request_id')} Retry {retries}: No terms extracted"
-        )
+        logger.warning(f"Retry {retries}: No terms extracted")
 
     if not parsed:
-        logger.error(
-            f"{state.get('request_id')} Extraction failed after max retries"
-        )
+        logger.error("Extraction failed after max retries")
 
-    logger.info(f"{state.get('request_id')} Extracted terms: {parsed}")
+    logger.info(f"Extracted terms: {parsed}")
 
     return {**state, "extracted_terms": parsed}
 
@@ -100,9 +96,7 @@ def is_question_mappable_node(state: MappingState) -> MappingState:
     """
     # Use a separate retry counter to avoid conflicts with other retry mechanisms
     retry_count = state.get("mappability_retry_count", 0)
-    logger.debug(
-        f"{state.get('request_id')} Entered is_question_mappable_node"
-    )
+    logger.debug("Entered is_question_mappable_node")
 
     # Get LLM agent and prompt for mappability assessment
     llm = AGENT_LLM_MAP["is_question_mappable_to_hpo"]
@@ -170,7 +164,7 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
 
     all_results = []
     if not term:
-        logger.warning(f"{state.get('request_id')} No term provided")
+        logger.warning("No term provided")
         return {**state, "umls_mappings": [{"original": "", "candidates": []}]}
 
     params = {"q": term, "page": 0, "limit": 5}
@@ -178,13 +172,11 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
     try:
         resp = requests.get(API_BASE_URL, params=params, timeout=10)
         logger.info(
-            f"{state.get('request_id')} [{term}] API Status: {resp.status_code}"
+            f"[{term}] API Status: {resp.status_code}"
         )
 
         if resp.status_code != 200:
-            logger.error(
-                f"{state.get('request_id')} Failed for term: {term}"
-            )
+            logger.error(f"Failed for term: {term}")
             all_results.append({"original": term, "candidates": []})
         else:
             try:
@@ -192,7 +184,7 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
                 results = data.get("terms", [])
             except Exception as e:
                 logger.error(
-                    f"{state.get('request_id')} JSON parse error for term '{term}': {e}"
+                    f"JSON parse error for term '{term}': {e}"
                 )
                 results = []
 
@@ -208,19 +200,15 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
             ]
 
             logger.info(
-                f"{state.get('request_id')} {term} candidates (showing first 2): {candidates[:2]}"
+                f"{term} candidates (showing first 2): {candidates[:2]}"
             )
             all_results.append({"original": term, "candidates": candidates})
 
     except Exception as e:
-        logger.error(
-            f"{state.get('request_id')} Request failed for term '{term}': {e}"
-        )
+        logger.error(f"Request failed for term '{term}': {e}")
         all_results.append({"original": term, "candidates": []})
 
-    logger.debug(
-        f"{state.get('request_id')} Final HPO mappings: {all_results}"
-    )
+    logger.debug(f"Final HPO mappings: {all_results}")
     return {**state, "umls_mappings": all_results}
 
 
@@ -273,9 +261,7 @@ def retry_with_llm_rewrite_node(state: MappingState) -> MappingState:
     # Update the history of rewritten terms
     updated_history = list(previous_terms.union(revised_terms))
 
-    logger.info(
-        f"{state.get('request_id')} Revised terms: {revised_terms}"
-    )
+    logger.info(f"Revised terms: {revised_terms}")
 
     return {
         **state,
@@ -300,7 +286,7 @@ def rank_mappings_node(state: MappingState) -> MappingState:
     Returns:
         MappingState: Updated state with ranked mappings by confidence
     """
-    logger.debug(f"{state.get('request_id')} Entered rank_mappings_node")
+    logger.debug("Entered rank_mappings_node")
     umls_mappings = state.get("umls_mappings", [])
     llm = AGENT_LLM_MAP["rank_mappings"]
     ranked_mappings = []
@@ -320,7 +306,7 @@ def rank_mappings_node(state: MappingState) -> MappingState:
         response = llm.invoke(prompt)
         raw_output = str(response.content).strip()
         logger.debug(
-            f"{state.get('request_id')} Raw LLM output for '{original_term}' (truncated)"
+            f"Raw LLM output for '{original_term}': {raw_output[:100]}..."
         )
 
         try:
@@ -330,7 +316,7 @@ def rank_mappings_node(state: MappingState) -> MappingState:
             output = json.loads(cleaned)
         except Exception as e:
             logger.error(
-                f"{state.get('request_id')} JSON decode failed for '{original_term}': {e}"
+                f"JSON decode failed for '{original_term}': {e}"
             )
             output = []
 
@@ -361,11 +347,10 @@ def rank_mappings_node(state: MappingState) -> MappingState:
             {"original": original_term, "ranked_candidates": updated_candidates}
         )
 
-    result = {**state, "ranked_mappings": ranked_mappings}
     logger.info(
-        f"{state.get('request_id')} Final ranked mappings count: {len(ranked_mappings)}"
+        f"Final ranked mappings count: {len(ranked_mappings)}"
     )
-    return result
+    return {**state, "ranked_mappings": ranked_mappings}
 
 
 # state: text,is_mappable,mappability_retry_count,extracted_terms,umls_mappings,history_rewritten_terms,retry_count,ranked_mappings
@@ -383,15 +368,11 @@ def validate_mapping_node(state: MappingState) -> MappingState:
     Returns:
         MappingState: Updated state with validated final mappings
     """
-    logger.debug(
-        f"{state.get('request_id')} Entered validate_mapping_node"
-    )
+    logger.debug("Entered validate_mapping_node")
 
     ranked_mappings = state.get("ranked_mappings", [])
     if not ranked_mappings:
-        logger.warning(
-            f"{state.get('request_id')} No ranked mappings to validate"
-        )
+        logger.warning("No ranked mappings to validate")
         return {**state}
 
     llm = AGENT_LLM_MAP["validate_mapping"]
@@ -424,15 +405,18 @@ def validate_mapping_node(state: MappingState) -> MappingState:
         response = llm.invoke(prompt)
         raw_output = str(response.content).strip()
         logger.debug(
-            f"{state.get('request_id')} Raw LLM output for '{original_term}' (truncated)"
+            f"Raw LLM output for '{original_term}': {raw_output[:100]}..."
         )
+        cleaned_output = re.sub(
+            r"```json\n?(.*?)\n?```", r"\1", raw_output, flags=re.DOTALL
+        ).strip()
 
         try:
-            parsed = json.loads(raw_output)
+            parsed = json.loads(cleaned_output)
             # Fallback if parsed result is empty or malformed
             if not parsed or not parsed.get("best_match_code"):
                 logger.warning(
-                    f"{state.get('request_id')} Validation failed or empty - using top-ranked fallback"
+                    "Validation failed or empty - using top-ranked fallback"
                 )
                 fallback_candidate = candidates[0]
                 validated_results.append(
@@ -454,7 +438,7 @@ def validate_mapping_node(state: MappingState) -> MappingState:
                 )
         except Exception as e:
             logger.warning(
-                f"{state.get('request_id')} Exception parsing validation output: {e} - using fallback"
+                f"Exception parsing validation output: {e} - using fallback"
             )
             fallback_candidate = candidates[0]
             validated_results.append(
