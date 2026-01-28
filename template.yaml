@@ -2,6 +2,9 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: GenOMA - Geneial Ontology Mapping Agent API
 
+Conditions:
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+
 Globals:
   Function:
     Timeout: 120
@@ -23,6 +26,11 @@ Parameters:
       - prd
       - tst
     Description: Deployment stage
+  
+  AlertEmail:
+    Type: String
+    Default: ""
+    Description: Email address to receive CloudWatch alarms
 
 Resources:
   GenomaFunctionLogGroup:
@@ -36,6 +44,36 @@ Resources:
     Properties:
       LogGroupName: !Sub "/aws/apigateway/${Stage}-genoma-api"
       RetentionInDays: 7
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: GenOMA API Alarms
+      Subscription:
+        - !If
+          - HasAlertEmail
+          - Endpoint: !Ref AlertEmail
+            Protocol: email
+          - !Ref AWS::NoValue
+
+  DailyRequestAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Alerts when API receives more than 200 requests per day
+      MetricName: Count
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 86400
+      EvaluationPeriods: 1
+      Threshold: 200
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiId
+          Value: !Ref GenomaApi
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
 
   GenomaFunction:
     Type: AWS::Serverless::Function
@@ -89,6 +127,9 @@ Resources:
         DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
         Format: >-
           {"requestId":"$context.requestId","ip":"$context.identity.sourceIp","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","routeKey":"$context.routeKey","status":"$context.status","errorMessage":"$context.error.message"}
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 5
+        ThrottlingRateLimit: 5
 
 Outputs:
   GenomaApiUrl:
