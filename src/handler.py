@@ -180,8 +180,8 @@ def _handle_map(event: dict, headers: dict, request_id: str) -> dict:
                 continue
             normalized.append(
                 {
-                    "code": item.get("code") or item.get("id") or "",
-                    "term": item.get("term") or item.get("label") or "",
+                    "code": item.get("best_match_code") or item.get("code") or item.get("id") or "",
+                    "term": item.get("best_match_term") or item.get("term") or item.get("label") or "",
                     "description": item.get("description") or item.get("def"),
                     "confidence": item.get("confidence"),
                 }
