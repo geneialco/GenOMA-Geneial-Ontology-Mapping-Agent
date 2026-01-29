@@ -171,9 +171,7 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
 
     try:
         resp = requests.get(API_BASE_URL, params=params, timeout=10)
-        logger.info(
-            f"[{term}] API Status: {resp.status_code}"
-        )
+        logger.info(f"[{term}] API Status: {resp.status_code}")
 
         if resp.status_code != 200:
             logger.error(f"Failed for term: {term}")
@@ -183,9 +181,7 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
                 data = resp.json()
                 results = data.get("terms", [])
             except Exception as e:
-                logger.error(
-                    f"JSON parse error for term '{term}': {e}"
-                )
+                logger.error(f"JSON parse error for term '{term}': {e}")
                 results = []
 
             candidates = [
@@ -199,9 +195,7 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
                 for r in results
             ]
 
-            logger.info(
-                f"{term} candidates (showing first 2): {candidates[:2]}"
-            )
+            logger.info(f"{term} candidates (showing first 2): {candidates[:2]}")
             all_results.append({"original": term, "candidates": candidates})
 
     except Exception as e:
@@ -268,6 +262,9 @@ def retry_with_llm_rewrite_node(state: MappingState) -> MappingState:
         "extracted_terms": revised_terms,
         "history_rewritten_terms": updated_history,
         "retry_count": state.get("retry_count", 0) + 1,
+        "ranked_mappings": [],
+        "validated_mappings": [],
+        "umls_mappings": [],
     }
 
 
@@ -305,9 +302,7 @@ def rank_mappings_node(state: MappingState) -> MappingState:
         prompt = apply_prompt_template("rank_mappings", prompt_state)
         response = llm.invoke(prompt)
         raw_output = str(response.content).strip()
-        logger.debug(
-            f"Raw LLM output for '{original_term}': {raw_output[:100]}..."
-        )
+        logger.debug(f"Raw LLM output for '{original_term}': {raw_output[:100]}...")
 
         try:
             cleaned = re.sub(
@@ -315,9 +310,7 @@ def rank_mappings_node(state: MappingState) -> MappingState:
             ).strip()
             output = json.loads(cleaned)
         except Exception as e:
-            logger.error(
-                f"JSON decode failed for '{original_term}': {e}"
-            )
+            logger.error(f"JSON decode failed for '{original_term}': {e}")
             output = []
 
         # Build confidence lookup from LLM output
@@ -347,9 +340,7 @@ def rank_mappings_node(state: MappingState) -> MappingState:
             {"original": original_term, "ranked_candidates": updated_candidates}
         )
 
-    logger.info(
-        f"Final ranked mappings count: {len(ranked_mappings)}"
-    )
+    logger.info(f"Final ranked mappings count: {len(ranked_mappings)}")
     return {**state, "ranked_mappings": ranked_mappings}
 
 
@@ -404,9 +395,7 @@ def validate_mapping_node(state: MappingState) -> MappingState:
         prompt = apply_prompt_template("validate_mapping", prompt_state)
         response = llm.invoke(prompt)
         raw_output = str(response.content).strip()
-        logger.debug(
-            f"Raw LLM output for '{original_term}': {raw_output[:100]}..."
-        )
+        logger.debug(f"Raw LLM output for '{original_term}': {raw_output[:100]}...")
         cleaned_output = re.sub(
             r"```json\n?(.*?)\n?```", r"\1", raw_output, flags=re.DOTALL
         ).strip()
@@ -415,9 +404,7 @@ def validate_mapping_node(state: MappingState) -> MappingState:
             parsed = json.loads(cleaned_output)
             # Fallback if parsed result is empty or malformed
             if not parsed or not parsed.get("best_match_code"):
-                logger.warning(
-                    "Validation failed or empty - using top-ranked fallback"
-                )
+                logger.warning("Validation failed or empty - using top-ranked fallback")
                 fallback_candidate = candidates[0]
                 validated_results.append(
                     {
@@ -437,9 +424,7 @@ def validate_mapping_node(state: MappingState) -> MappingState:
                     }
                 )
         except Exception as e:
-            logger.warning(
-                f"Exception parsing validation output: {e} - using fallback"
-            )
+            logger.warning(f"Exception parsing validation output: {e} - using fallback")
             fallback_candidate = candidates[0]
             validated_results.append(
                 {
@@ -451,5 +436,6 @@ def validate_mapping_node(state: MappingState) -> MappingState:
             )
 
     return {**state, "validated_mappings": validated_results}
+
 
 # state: text,is_mappable,mappability_retry_count,extracted_terms,umls_mappings,history_rewritten_terms,retry_count,ranked_mappings,validated_mappings
