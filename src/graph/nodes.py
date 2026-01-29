@@ -53,7 +53,7 @@ def _extract_medical_terms(state: MappingState, prompt_name: str) -> MappingStat
     llm = AGENT_LLM_MAP["extract_medical_term_from_survey"]
     prompt = apply_prompt_template(prompt_name, state)
 
-    max_retries = 50
+    max_retries = 3
     retries = 0
     parsed: List[str] = []
 
