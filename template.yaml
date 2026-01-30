@@ -4,6 +4,7 @@ Description: GenOMA - Geneial Ontology Mapping Agent API
 
 Conditions:
   HasAlertEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+  HasWebOrigin: !Not [!Equals [!Ref WebOrigin, ""]]
 
 Globals:
   Function:
@@ -31,6 +32,10 @@ Parameters:
     Type: String
     Default: ""
     Description: Email address to receive CloudWatch alarms
+  
+  WebOrigin:
+    Type: String
+    Default: ""
 
 Resources:
   GenomaFunctionLogGroup:
@@ -121,8 +126,13 @@ Resources:
         AllowHeaders:
           - Content-Type
           - Authorization
-        AllowOrigins:
-          - "*"
+        AllowOrigins: !If
+          - HasWebOrigin
+          - - "http://localhost:8080"
+            - "http://127.0.0.1:8080"
+            - !Ref WebOrigin
+          - - "http://localhost:8080"
+            - "http://127.0.0.1:8080"
       AccessLogSettings:
         DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
         Format: >-
