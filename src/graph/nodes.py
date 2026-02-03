@@ -71,12 +71,16 @@ def _extract_medical_terms(state: MappingState, prompt_name: str) -> MappingStat
             break
 
         retries += 1
-        logger.warning(f"Retry {retries}: No terms extracted")
+        logger.warning(
+            f"Extraction retry {retries}/{max_retries} - prompt: {prompt_name}"
+        )
 
     if not parsed:
-        logger.error("Extraction failed after max retries")
+        logger.error(
+            f"Extraction failed after {max_retries} retries - prompt: {prompt_name}"
+        )
 
-    logger.info(f"Extracted terms: {parsed}")
+    logger.info(f"Extracted {len(parsed)} terms: {parsed}")
 
     return {**state, "extracted_terms": parsed}
 
@@ -164,24 +168,30 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
 
     all_results = []
     if not term:
-        logger.warning("No term provided")
+        logger.warning("No term provided for UMLS fetch")
         return {**state, "umls_mappings": [{"original": "", "candidates": []}]}
 
     params = {"q": term, "page": 0, "limit": 5}
 
     try:
         resp = requests.get(API_BASE_URL, params=params, timeout=10)
-        logger.info(f"[{term}] API Status: {resp.status_code}")
+        logger.info(f"UMLS API query - term: {term}, status: {resp.status_code}")
 
         if resp.status_code != 200:
-            logger.error(f"Failed for term: {term}")
+            logger.error(
+                f"UMLS API error - term: {term}, status: {resp.status_code}, "
+                f"response: {resp.text[:200]}"
+            )
             all_results.append({"original": term, "candidates": []})
         else:
             try:
                 data = resp.json()
                 results = data.get("terms", [])
             except Exception as e:
-                logger.error(f"JSON parse error for term '{term}': {e}")
+                logger.error(
+                    f"UMLS API JSON parse error - term: {term}, error: {e}, "
+                    f"response_preview: {resp.text[:200]}"
+                )
                 results = []
 
             candidates = [
@@ -195,11 +205,22 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
                 for r in results
             ]
 
-            logger.info(f"{term} candidates (showing first 2): {candidates[:2]}")
+            logger.info(
+                f"UMLS candidates found - term: {term}, count: {len(candidates)}, "
+                f"top_2: {[c.get('code') for c in candidates[:2]]}"
+            )
             all_results.append({"original": term, "candidates": candidates})
 
+    except requests.exceptions.Timeout:
+        logger.error(f"UMLS API timeout - term: {term}, timeout: 10s")
+        all_results.append({"original": term, "candidates": []})
+    except requests.exceptions.RequestException as e:
+        logger.error(
+            f"UMLS API request failed - term: {term}, error: {type(e).__name__}: {e}"
+        )
+        all_results.append({"original": term, "candidates": []})
     except Exception as e:
-        logger.error(f"Request failed for term '{term}': {e}")
+        logger.error(f"Unexpected error fetching UMLS terms - term: {term}, error: {e}")
         all_results.append({"original": term, "candidates": []})
 
     logger.debug(f"Final HPO mappings: {all_results}")
@@ -309,8 +330,14 @@ def rank_mappings_node(state: MappingState) -> MappingState:
                 r"```json\n?(.*?)\n?```", r"\1", raw_output, flags=re.DOTALL
             ).strip()
             output = json.loads(cleaned)
+        except json.JSONDecodeError as e:
+            logger.error(
+                f"Ranking JSON decode failed - term: {original_term}, "
+                f"error: {e}, output_preview: {raw_output[:200]}"
+            )
+            output = []
         except Exception as e:
-            logger.error(f"JSON decode failed for '{original_term}': {e}")
+            logger.error(f"Ranking parse error - term: {original_term}, error: {e}")
             output = []
 
         # Build confidence lookup from LLM output
@@ -404,7 +431,10 @@ def validate_mapping_node(state: MappingState) -> MappingState:
             parsed = json.loads(cleaned_output)
             # Fallback if parsed result is empty or malformed
             if not parsed or not parsed.get("best_match_code"):
-                logger.warning("Validation failed or empty - using top-ranked fallback")
+                logger.warning(
+                    f"Validation result empty/malformed - term: {original_term}, "
+                    f"using top-ranked fallback (code: {candidates[0].get('code')})"
+                )
                 fallback_candidate = candidates[0]
                 validated_results.append(
                     {
@@ -415,16 +445,38 @@ def validate_mapping_node(state: MappingState) -> MappingState:
                     }
                 )
             else:
+                confidence = _parse_confidence(parsed["confidence"])
+                logger.debug(
+                    f"Validation successful - term: {original_term}, "
+                    f"code: {parsed['best_match_code']}, confidence: {confidence:.2f}"
+                )
                 validated_results.append(
                     {
                         "original": original_term,
                         "best_match_code": parsed["best_match_code"],
                         "best_match_term": parsed["best_match_term"],
-                        "confidence": _parse_confidence(parsed["confidence"]),
+                        "confidence": confidence,
                     }
                 )
+        except json.JSONDecodeError as e:
+            logger.warning(
+                f"Validation JSON decode error - term: {original_term}, "
+                f"error: {e}, output_preview: {cleaned_output[:200]}, using fallback"
+            )
+            fallback_candidate = candidates[0]
+            validated_results.append(
+                {
+                    "original": original_term,
+                    "best_match_code": fallback_candidate["code"],
+                    "best_match_term": fallback_candidate["term"],
+                    "confidence": fallback_candidate.get("confidence", 1.0),
+                }
+            )
         except Exception as e:
-            logger.warning(f"Exception parsing validation output: {e} - using fallback")
+            logger.warning(
+                f"Validation parse error - term: {original_term}, "
+                f"error: {type(e).__name__}: {e}, using fallback"
+            )
             fallback_candidate = candidates[0]
             validated_results.append(
                 {
