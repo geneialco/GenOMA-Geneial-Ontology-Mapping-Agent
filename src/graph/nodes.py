@@ -161,69 +161,77 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
         MappingState: Updated state with UMLS mapping candidates
     """
     raw = state.get("extracted_terms", "")
+    
+    # Normalize to a list of terms
     if isinstance(raw, list):
-        term = raw[0] if raw else ""
+        terms = [str(t).strip() for t in raw if t and str(t).strip()]
     else:
-        term = str(raw or "").strip()
+        terms = [str(raw).strip()] if raw and str(raw).strip() else []
 
     all_results = []
-    if not term:
-        logger.warning("No term provided for UMLS fetch")
-        return {**state, "umls_mappings": [{"original": "", "candidates": []}]}
+    
+    if not terms:
+        logger.warning("No terms provided for UMLS fetch")
+        return {**state, "umls_mappings": []}
 
-    params = {"q": term, "page": 0, "limit": 5}
+    # Process each extracted term
+    for term in terms:
+        if not term:
+            continue
 
-    try:
-        resp = requests.get(API_BASE_URL, params=params, timeout=10)
-        logger.info(f"UMLS API query - term: {term}, status: {resp.status_code}")
+        params = {"q": term, "page": 0, "limit": 5}
 
-        if resp.status_code != 200:
+        try:
+            resp = requests.get(API_BASE_URL, params=params, timeout=10)
+            logger.info(f"UMLS API query - term: {term}, status: {resp.status_code}")
+
+            if resp.status_code != 200:
+                logger.error(
+                    f"UMLS API error - term: {term}, status: {resp.status_code}, "
+                    f"response: {resp.text[:200]}"
+                )
+                all_results.append({"original": term, "candidates": []})
+            else:
+                try:
+                    data = resp.json()
+                    results = data.get("terms", [])
+                except Exception as e:
+                    logger.error(
+                        f"UMLS API JSON parse error - term: {term}, error: {e}, "
+                        f"response_preview: {resp.text[:200]}"
+                    )
+                    results = []
+
+                candidates = [
+                    {
+                        "code": r.get("id"),
+                        "term": r.get("name"),
+                        "description": r.get("definition"),
+                        "synonyms": r.get("synonyms", []),
+                        "xrefs": r.get("xrefs", []),
+                    }
+                    for r in results
+                ]
+
+                logger.info(
+                    f"UMLS candidates found - term: {term}, count: {len(candidates)}, "
+                    f"top_2: {[c.get('code') for c in candidates[:2]]}"
+                )
+                all_results.append({"original": term, "candidates": candidates})
+
+        except requests.exceptions.Timeout:
+            logger.error(f"UMLS API timeout - term: {term}, timeout: 10s")
+            all_results.append({"original": term, "candidates": []})
+        except requests.exceptions.RequestException as e:
             logger.error(
-                f"UMLS API error - term: {term}, status: {resp.status_code}, "
-                f"response: {resp.text[:200]}"
+                f"UMLS API request failed - term: {term}, error: {type(e).__name__}: {e}"
             )
             all_results.append({"original": term, "candidates": []})
-        else:
-            try:
-                data = resp.json()
-                results = data.get("terms", [])
-            except Exception as e:
-                logger.error(
-                    f"UMLS API JSON parse error - term: {term}, error: {e}, "
-                    f"response_preview: {resp.text[:200]}"
-                )
-                results = []
+        except Exception as e:
+            logger.error(f"Unexpected error fetching UMLS terms - term: {term}, error: {e}")
+            all_results.append({"original": term, "candidates": []})
 
-            candidates = [
-                {
-                    "code": r.get("id"),
-                    "term": r.get("name"),
-                    "description": r.get("definition"),
-                    "synonyms": r.get("synonyms", []),
-                    "xrefs": r.get("xrefs", []),
-                }
-                for r in results
-            ]
-
-            logger.info(
-                f"UMLS candidates found - term: {term}, count: {len(candidates)}, "
-                f"top_2: {[c.get('code') for c in candidates[:2]]}"
-            )
-            all_results.append({"original": term, "candidates": candidates})
-
-    except requests.exceptions.Timeout:
-        logger.error(f"UMLS API timeout - term: {term}, timeout: 10s")
-        all_results.append({"original": term, "candidates": []})
-    except requests.exceptions.RequestException as e:
-        logger.error(
-            f"UMLS API request failed - term: {term}, error: {type(e).__name__}: {e}"
-        )
-        all_results.append({"original": term, "candidates": []})
-    except Exception as e:
-        logger.error(f"Unexpected error fetching UMLS terms - term: {term}, error: {e}")
-        all_results.append({"original": term, "candidates": []})
-
-    logger.debug(f"Final HPO mappings: {all_results}")
+    logger.debug(f"Final HPO mappings for {len(all_results)} terms: {all_results}")
     return {**state, "umls_mappings": all_results}
 
 

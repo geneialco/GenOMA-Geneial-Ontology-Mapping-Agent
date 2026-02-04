@@ -22,7 +22,7 @@ from src.graph.types import MappingState
 def should_retry_with_llm_rewrite(state: MappingState) -> bool:
     """
     Decide whether to retry with LLM rewrite AFTER validation.
-    Trigger if best confidence < 0.9 and we haven't exceeded 5 retries.
+    Trigger if any validated mapping has confidence < 0.9 and we haven't exceeded 5 retries.
     """
     retry_count = state.get("retry_count", 0)
     if retry_count >= 5:
@@ -32,8 +32,13 @@ def should_retry_with_llm_rewrite(state: MappingState) -> bool:
     if not validated_list or not isinstance(validated_list, list):
         return False
 
-    confidence = validated_list[0].get("confidence", 1.0)
-    return confidence < 0.9
+    # Check if any mapping has low confidence
+    for mapping in validated_list:
+        confidence = mapping.get("confidence", 1.0)
+        if confidence < 0.9:
+            return True
+    
+    return False
 
 
 def choose_extraction_node(state: MappingState) -> str:
