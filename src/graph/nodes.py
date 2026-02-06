@@ -238,59 +238,105 @@ def fetch_umls_terms_node(state: MappingState) -> MappingState:
 # state: text, is_mappable, mappability_retry_count, extracted_terms, umls_mappings
 def retry_with_llm_rewrite_node(state: MappingState) -> MappingState:
     """
-    Retry term extraction with LLM rewrite when no UMLS candidates are found.
+    Retry term extraction with LLM rewrite for low-confidence mappings.
 
-    This node is triggered when the initial term extraction fails to find any
-    UMLS ontology candidates. It uses an LLM to generate alternative terms
-    that might be more likely to match ontology entries.
+    This node is triggered when some mappings have low confidence (< 0.9).
+    It preserves high-confidence mappings and only rewrites terms that need
+    improvement.
 
     Args:
-        state (MappingState): Current workflow state with failed mappings
+        state (MappingState): Current workflow state with validated mappings
 
     Returns:
-        MappingState: Updated state with rewritten terms for retry
+        MappingState: Updated state with rewritten terms for low-confidence mappings
     """
+    validated_mappings = state.get("validated_mappings", [])
+    confidence_threshold = 0.9
+    
+    # Separate high-confidence and low-confidence mappings
+    high_confidence_mappings = []
+    low_confidence_terms = []
+    
+    for mapping in validated_mappings:
+        confidence = mapping.get("confidence", 0.0)
+        original_term = mapping.get("original", "")
+        
+        if confidence >= confidence_threshold:
+            # Preserve this mapping
+            high_confidence_mappings.append(mapping)
+            logger.info(
+                f"Preserving high-confidence mapping - term: {original_term}, "
+                f"code: {mapping.get('best_match_code')}, confidence: {confidence:.2f}"
+            )
+        else:
+            # This term needs rewriting
+            low_confidence_terms.append(original_term)
+            logger.info(
+                f"Flagged for retry - term: {original_term}, confidence: {confidence:.2f}"
+            )
+    
+    if not low_confidence_terms:
+        logger.warning("Retry triggered but no low-confidence terms found")
+        return {**state, "preserved_mappings": high_confidence_mappings}
+    
     # Prepare the list of previously seen terms to avoid repetition
     previous_terms = set(state.get("history_rewritten_terms", []))
-    extracted_terms = state.get("extracted_terms", [])
-    previous_terms.update(extracted_terms)
-
-    # Inject previous_terms into the prompt context for the LLM
-    state_for_prompt = {**state, "previous_terms": list(previous_terms)}
-
-    llm = AGENT_LLM_MAP["retry_with_llm_rewrite"]
-    prompt = apply_prompt_template("retry_with_llm_rewrite", state_for_prompt)
-
-    response = llm.invoke(prompt)
-    raw_content = str(response.content)
-
-    cleaned = re.sub(
-        r"```json\s*\n*(.*?)```", r"\1", raw_content, flags=re.DOTALL
-    ).strip()
-
-    try:
-        parsed = json.loads(cleaned)
-    except (json.JSONDecodeError, Exception):
-        parsed = []
-
-    # Record the newly revised terms (excluding previously seen ones)
+    previous_terms.update(low_confidence_terms)
+    
+    # Rewrite only the low-confidence terms
     revised_terms = []
-    for term in parsed:
-        if term not in previous_terms:
+    for term in low_confidence_terms:
+        state_for_prompt = {
+            **state,
+            "text": term,
+            "previous_terms": list(previous_terms)
+        }
+        
+        llm = AGENT_LLM_MAP["retry_with_llm_rewrite"]
+        prompt = apply_prompt_template("retry_with_llm_rewrite", state_for_prompt)
+        
+        response = llm.invoke(prompt)
+        raw_content = str(response.content)
+        
+        cleaned = re.sub(
+            r"```json\s*\n*(.*?)```", r"\1", raw_content, flags=re.DOTALL
+        ).strip()
+        
+        try:
+            parsed = json.loads(cleaned)
+            # Extract the rewritten term (should be a single term)
+            if isinstance(parsed, list) and parsed:
+                rewritten_term = parsed[0]
+            elif isinstance(parsed, str):
+                rewritten_term = parsed
+            else:
+                rewritten_term = None
+                
+            if rewritten_term and rewritten_term not in previous_terms:
+                revised_terms.append(rewritten_term)
+                previous_terms.add(rewritten_term)
+                logger.info(f"Rewrote '{term}' → '{rewritten_term}'")
+            else:
+                logger.warning(f"Failed to rewrite term: {term}, using original")
+                revised_terms.append(term)
+        except (json.JSONDecodeError, Exception) as e:
+            logger.error(f"Error parsing rewritten term for '{term}': {e}")
             revised_terms.append(term)
-    if not revised_terms:
-        revised_terms = []
-
+    
     # Update the history of rewritten terms
-    updated_history = list(previous_terms.union(revised_terms))
-
-    logger.info(f"Revised terms: {revised_terms}")
+    updated_history = list(previous_terms)
+    
+    logger.info(
+        f"Retry summary - preserved: {len(high_confidence_mappings)}, "
+        f"rewriting: {len(revised_terms)}"
+    )
 
     return {
         **state,
         "extracted_terms": revised_terms,
         "history_rewritten_terms": updated_history,
         "retry_count": state.get("retry_count", 0) + 1,
+        "preserved_mappings": high_confidence_mappings,
         "ranked_mappings": [],
         "validated_mappings": [],
         "umls_mappings": [],
@@ -495,7 +541,18 @@ def validate_mapping_node(state: MappingState) -> MappingState:
                 }
             )
 
-    return {**state, "validated_mappings": validated_results}
+    # Merge with preserved mappings from retry (if any)
+    preserved_mappings = state.get("preserved_mappings", [])
+    if preserved_mappings:
+        logger.info(
+            f"Merging {len(preserved_mappings)} preserved mappings with "
+            f"{len(validated_results)} new mappings"
+        )
+        all_validated = preserved_mappings + validated_results
+    else:
+        all_validated = validated_results
+
+    return {**state, "validated_mappings": all_validated, "preserved_mappings": []}
 
 
 # state: text,is_mappable,mappability_retry_count,extracted_terms,umls_mappings,history_rewritten_terms,retry_count,ranked_mappings,validated_mappings

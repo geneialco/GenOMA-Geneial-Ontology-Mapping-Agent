@@ -90,7 +90,7 @@ print(result)
 
 - `text`: The question/phrase to map
 - `field_type`: One of:
-  - `"radio"` — yes/no questions or regular sentences (default)
+  - `"radio"` — yes/no questions or regular sentences
   - `"checkbox"` — multi-select questions with options
   - `"short"` — short phrases (typically < 5 meaningful words)
 

@@ -42,6 +42,7 @@ class MappingState(TypedDict, total=False):
     best_match_term: str  # Best matching ontology term name
     confidence: float  # Confidence score for the best match (0.0 to 1.0)
     validated_mappings: List[Dict[str, Any]]  # Final validated mapping results
+    preserved_mappings: List[Dict[str, Any]]  # High-confidence mappings preserved during retry
 
     # === Refinement Related Fields (Ancestor-based refinement) ===
     original_mapping: Dict[str, Any]  # Original mapping before refinement
